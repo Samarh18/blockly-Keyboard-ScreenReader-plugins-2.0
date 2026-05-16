@@ -1,10 +1,14 @@
-# Blockly Accessibility Demo
+# Blockly Accessibility Plugins 2.0
 
-This experimental project aims to enhance the accessibility of Blockly by combining the existing keyboard navigation plugin with additional screen reader support. The goal is to make block-based programming more inclusive and accessible to users with visual impairments and mobility limitations.
+This project is a continuation of thesis research that enhanced the accessibility of Blockly by combining the existing keyboard navigation plugin with additional screen reader support, making block-based programming more inclusive for users with visual impairments and mobility limitations.
+
+**About this version:** The original work (1.0) was co-designed and evaluated with students as part of a thesis study. This 2.0 version moves beyond that work and is driven by the author's own ideas, as well as features that were briefly discussed with students during the study but were never fully implemented or tested. Nothing here has been co-designed or validated with users — it is exploratory and experimental.
 
 ## Demo
 
-A working demonstration of this accessibility implementation is available at: [https://samarh18.github.io/blockly-Keyboard-ScreenReader-plugins/](https://samarh18.github.io/blockly-Keyboard-ScreenReader-plugins/)
+A working demonstration of this 2.0 implementation is available at: [https://samarh18.github.io/blockly-Keyboard-ScreenReader-plugins-2.0/](https://samarh18.github.io/blockly-Keyboard-ScreenReader-plugins-2.0/)
+
+The original thesis demo (1.0) can be found at: [https://samarh18.github.io/blockly-Keyboard-ScreenReader-plugins/](https://samarh18.github.io/blockly-Keyboard-ScreenReader-plugins/)
 
 ## Keyboard Shortcuts
 
@@ -110,4 +114,4 @@ The screen reader provides detailed descriptions for:
 
 ## Current Status
 
-This project is currently in an experimental phase and is not yet ready for production use. It builds upon the keyboard navigation work by the Blockly team and aims to contribute to making block-based programming accessible to everyone.
+This project is actively in development and not ready for production use. It builds on the Blockly team's keyboard navigation plugin and the thesis work from 1.0. Features added here are exploratory — they have not been co-designed or tested with users and should be treated as works-in-progress.
