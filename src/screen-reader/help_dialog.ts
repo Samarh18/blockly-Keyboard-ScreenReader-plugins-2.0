@@ -60,7 +60,7 @@ export class HelpDialog {
       const announce = () => {
         if (announced) return;
         announced = true;
-        this.screenReader.forceSpeek(
+        this.screenReader.forceSpeak(
           'The help guide is open. Press Tab to explore tips, or Escape to close and start.'
         );
       };
@@ -86,7 +86,7 @@ export class HelpDialog {
         }
 
         setTimeout(() => {
-          this.screenReader.forceSpeek(
+          this.screenReader.forceSpeak(
             'Help guide open. Tab to navigate, Escape to close.'
           );
         }, 100);
@@ -99,7 +99,7 @@ export class HelpDialog {
    */
   private closeDialog(): void {
     this.helpDialog?.close();
-    this.screenReader.forceSpeek('Help guide closed.');
+    this.screenReader.forceSpeak('Help guide closed.');
   }
 
   /**
@@ -218,7 +218,7 @@ export class HelpDialog {
     // Test speech button
     const testSpeechButton = document.getElementById('test-speech');
     testSpeechButton?.addEventListener('click', () => {
-      this.screenReader.forceSpeek('Speech synthesis test. This is how your screen reader sounds.');
+      this.screenReader.forceSpeak('Speech synthesis test. This is how your screen reader sounds.');
     });
 
     // Escape key to close
@@ -244,7 +244,7 @@ export class HelpDialog {
           const elementText = element.textContent?.trim() || 'Content';
           // Clean up the text for better screen reader announcement
           const cleanText = elementText.replace(/\s+/g, ' ').substring(0, 200);
-          this.screenReader.forceSpeek(cleanText);
+          this.screenReader.forceSpeak(cleanText);
         }
       });
     });

@@ -28,7 +28,6 @@ import * as Constants from './constants';
 import { Clipboard } from './actions/clipboard';
 import { DeleteAction } from './actions/delete';
 import { EditAction } from './actions/edit';
-//import { InsertAction } from './actions/insert';
 import { Navigation } from './navigation';
 import { ShortcutDialog } from './shortcut_dialog';
 import { WorkspaceMovement } from './actions/ws_movement';
@@ -56,11 +55,8 @@ export class NavigationController {
   /** Context menu and keyboard action for deletion. */
   deleteAction: DeleteAction = new DeleteAction(this.navigation);
 
-  /** Context menu and keyboard action for deletion. */
+  /** Context menu and keyboard action for editing. */
   editAction: EditAction = new EditAction(this.navigation);
-
-  /** Context menu and keyboard action for insertion. */
-  //insertAction: InsertAction = new InsertAction(this.navigation);
 
   /** Keyboard shortcut for disconnection. */
   disconnectAction: DisconnectAction = new DisconnectAction(this.navigation);
@@ -102,13 +98,7 @@ export class NavigationController {
 
   settingsDialog: SettingsDialog | null = null;
 
-  // Add the method here, before init()
-  /**
-   * Handle first letter navigation in the toolbox
-   */
-  /**
- * Handle first letter navigation in the toolbox
- */
+  /** Navigates the toolbox to the next category starting with the given letter. */
   private handleToolboxFirstLetter(
     workspace: Blockly.WorkspaceSvg,
     letter: string
@@ -253,18 +243,22 @@ export class NavigationController {
     this.navigation.removeWorkspace(workspace);
   }
 
+  /** Sets browser focus to the workspace SVG. */
   focusWorkspace(workspace: WorkspaceSvg) {
     this.navigation.focusWorkspace(workspace);
   }
 
+  /** Handles the workspace gaining focus: updates nav state and cursor. */
   handleFocusWorkspace(workspace: Blockly.WorkspaceSvg) {
     this.navigation.handleFocusWorkspace(workspace);
   }
 
+  /** Handles the workspace losing focus: switches to passive focus indicator. */
   handleBlurWorkspace(workspace: Blockly.WorkspaceSvg) {
     this.navigation.handleBlurWorkspace(workspace);
   }
 
+  /** Handles focusout on the widget or dropdown div. */
   handleFocusOutWidgetDropdownDiv(
     workspace: Blockly.WorkspaceSvg,
     relatedTarget: EventTarget | null,
@@ -272,26 +266,32 @@ export class NavigationController {
     this.navigation.handleFocusOutWidgetDropdownDiv(workspace, relatedTarget);
   }
 
+  /** Sets browser focus to the toolbox (if present). */
   focusToolbox(workspace: Blockly.WorkspaceSvg) {
     this.navigation.focusToolbox(workspace);
   }
 
+  /** Handles the toolbox gaining focus: updates nav state and selects first item. */
   handleFocusToolbox(workspace: Blockly.WorkspaceSvg) {
     this.navigation.handleFocusToolbox(workspace);
   }
 
+  /** Handles the toolbox losing focus; optionally closes the flyout. */
   handleBlurToolbox(workspace: Blockly.WorkspaceSvg, closeFlyout: boolean) {
     this.navigation.handleBlurToolbox(workspace, closeFlyout);
   }
 
+  /** Sets browser focus to the flyout (if present). */
   focusFlyout(workspace: Blockly.WorkspaceSvg) {
     this.navigation.focusFlyout(workspace);
   }
 
+  /** Handles the flyout gaining focus: updates nav state and positions cursor. */
   handleFocusFlyout(workspace: Blockly.WorkspaceSvg) {
     this.navigation.handleFocusFlyout(workspace);
   }
 
+  /** Handles the flyout losing focus; optionally closes the flyout. */
   handleBlurFlyout(workspace: Blockly.WorkspaceSvg, closeFlyout: boolean) {
     this.navigation.handleBlurFlyout(workspace, closeFlyout);
   }
@@ -374,21 +374,16 @@ export class NavigationController {
           Blockly.Events.setGroup(true);
           try {
             topBlocks.forEach(block => {
-              block.dispose(true); // true = heal stack after deletion
+              block.dispose(true);
             });
           } finally {
             Blockly.Events.setGroup(false);
           }
 
-          const announcement = `Deleted all blocks from workspace`;
-
-          console.log(announcement);
-
           return true;
         },
         keyCodes: [KeyCodes.D],
       },
-      /** First letter navigation for toolbox */
       /** First letter navigation for toolbox */
       toolboxFirstLetter: {
         name: 'TOOLBOX_FIRST_LETTER',
@@ -446,7 +441,6 @@ export class NavigationController {
     }
     this.deleteAction.install();
     this.editAction.install();
-    //this.insertAction.install();
     this.workspaceMovement.install();
     this.arrowNavigation.install();
     this.exitAction.install();
@@ -475,7 +469,6 @@ export class NavigationController {
     this.moveActions.uninstall();
     this.deleteAction.uninstall();
     this.editAction.uninstall();
-    //this.insertAction.uninstall();
     this.disconnectAction.uninstall();
     this.clipboard.uninstall();
     this.workspaceMovement.uninstall();

@@ -8,13 +8,19 @@ import * as Blockly from 'blockly/core';
 import { NavigationController } from './navigation_controller';
 
 /**
- * Enhanced global shortcut handler with proper tab order management.
+ * Manages document-level keyboard shortcuts (B/R/W/S/H) that move focus
+ * between the main UI regions regardless of which element is currently active.
+ * Also maintains the Tab-order bridge between the Help button and toolbox.
  */
 export class GlobalShortcuts {
     private workspace: Blockly.WorkspaceSvg;
     private navigationController: NavigationController;
     private globalKeyHandler: (e: KeyboardEvent) => void;
 
+    /**
+     * @param workspace The Blockly workspace this shortcut handler targets.
+     * @param navigationController The controller used to move focus programmatically.
+     */
     constructor(
         workspace: Blockly.WorkspaceSvg,
         navigationController: NavigationController,

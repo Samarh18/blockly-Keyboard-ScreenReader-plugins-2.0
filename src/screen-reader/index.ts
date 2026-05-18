@@ -7,8 +7,8 @@
 // Export the main ScreenReader class
 export { ScreenReader } from './screen_reader';
 
-// Export the SettingsDialog class and its types
-export { SettingsDialog } from './settings_dialog';
+// Export the SettingsDialog class, its types, and shared settings utilities
+export { SettingsDialog, loadSpeechSettings, getDefaultSpeechSettings } from './settings_dialog';
 export type { SpeechSettings } from './settings_dialog';
 
 // Export the HelpDialog class

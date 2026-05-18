@@ -11,11 +11,32 @@ import { ScreenReader } from './screen_reader';
  * Speech settings interface
  */
 export interface SpeechSettings {
-  enabled: boolean;    //Enable/disable screen reader
+  enabled: boolean;    // Enable/disable screen reader
   rate: number;        // 0.5 - 3.0
   pitch: number;       // 0.5 - 2.0
   volume: number;      // 0.1 - 1.0
   voiceIndex: number;  // Index in available voices array
+}
+
+/** Returns the default speech settings. */
+export function getDefaultSpeechSettings(): SpeechSettings {
+  return { enabled: true, rate: 1.7, pitch: 1.0, volume: 1.0, voiceIndex: 0 };
+}
+
+/**
+ * Returns settings loaded from localStorage, falling back to defaults.
+ * Both ScreenReader and SettingsDialog use this so settings are consistent.
+ */
+export function loadSpeechSettings(): SpeechSettings {
+  const saved = localStorage.getItem('blockly-screenreader-settings');
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch {
+      console.warn('Failed to parse saved settings, using defaults');
+    }
+  }
+  return getDefaultSpeechSettings();
 }
 
 /**
@@ -48,38 +69,9 @@ export class SettingsDialog {
     this.closeButton = null;
 
     // Load current settings
-    this.currentSettings = this.loadSettings();
+    this.currentSettings = loadSpeechSettings();
     this.currentSettings.enabled = this.screenReader.isScreenReaderEnabled();
     this.originalSettings = { ...this.currentSettings };
-  }
-
-  /**
-   * Load settings from localStorage with defaults
-   */
-  private loadSettings(): SpeechSettings {
-    const saved = localStorage.getItem('blockly-screenreader-settings');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.warn('Failed to parse saved settings, using defaults');
-      }
-    }
-
-    return this.getDefaultSettings();
-  }
-
-  /**
-   * Get default settings
-   */
-  private getDefaultSettings(): SpeechSettings {
-    return {
-      enabled: true,
-      rate: 1.7,
-      pitch: 1.0,
-      volume: 1.0,
-      voiceIndex: 0
-    };
   }
 
   /**
@@ -108,11 +100,8 @@ export class SettingsDialog {
         this.originalSettings = { ...this.currentSettings };
         this.settingsDialog.showModal();
 
-        // ADD DEBUG CHECK
-        this.debugVoiceLoading();
-
         setTimeout(() => {
-          this.screenReader.forceSpeek(
+          this.screenReader.forceSpeak(
             'Settings window opened. Use Tab to navigate through settings controls. Press Escape or select Cancel to close without saving.'
           );
         }, 100);
@@ -139,7 +128,7 @@ export class SettingsDialog {
    * Reset to default settings
    */
   private resetToDefaults(): void {
-    this.currentSettings = this.getDefaultSettings();
+    this.currentSettings = getDefaultSpeechSettings();
     this.updateControlValues();
     this.applySettingsPreview();
     this.screenReader.testSpeechSettings('Settings reset to defaults.');
@@ -172,33 +161,13 @@ export class SettingsDialog {
     const pitchSlider = document.getElementById('speech-pitch') as HTMLInputElement;
     const volumeSlider = document.getElementById('speech-volume') as HTMLInputElement;
     const voiceSelect = document.getElementById('speech-voice') as HTMLSelectElement;
-    const enabledCheckbox = document.getElementById('screen-reader-enabled') as HTMLInputElement; // NEW
+    const enabledCheckbox = document.getElementById('screen-reader-enabled') as HTMLInputElement;
 
     if (rateSlider) rateSlider.value = this.currentSettings.rate.toString();
     if (pitchSlider) pitchSlider.value = this.currentSettings.pitch.toString();
     if (volumeSlider) volumeSlider.value = this.currentSettings.volume.toString();
     if (voiceSelect) voiceSelect.selectedIndex = this.currentSettings.voiceIndex;
-    if (enabledCheckbox) enabledCheckbox.checked = this.currentSettings.enabled; // NEW
-  }
-
-  /**
- * Ensure voices are loaded before creating the dialog
- */
-  private ensureVoicesLoaded(): void {
-    const voices = window.speechSynthesis.getVoices();
-
-    if (voices.length === 0) {
-      // Voices not loaded yet, wait for them
-      window.speechSynthesis.onvoiceschanged = () => {
-        console.log('Voices loaded, updating dropdown...');
-        this.updateVoiceDropdown(); // UPDATE just the dropdown
-      };
-
-      // Also try to trigger voice loading
-      const utterance = new SpeechSynthesisUtterance('');
-      window.speechSynthesis.speak(utterance);
-      window.speechSynthesis.cancel();
-    }
+    if (enabledCheckbox) enabledCheckbox.checked = this.currentSettings.enabled;
   }
 
   /**
@@ -206,36 +175,25 @@ export class SettingsDialog {
    */
   private updateVoiceDropdown(): void {
     const voiceSelect = document.getElementById('speech-voice') as HTMLSelectElement;
-    if (!voiceSelect) {
-      console.log('Voice dropdown not found, will update when dialog opens');
-      return;
-    }
+    if (!voiceSelect) return;
 
     const voices = this.getAvailableVoices();
-    console.log('Updating voice dropdown with', voices.length, 'voices');
 
-    // Clear existing options
     voiceSelect.innerHTML = '';
 
     if (voices.length === 0) {
       voiceSelect.innerHTML = '<option value="0">Default Voice (Loading...)</option>';
     } else {
-      // Add all available voices
       voices.forEach((voice, index) => {
         const option = document.createElement('option');
         option.value = index.toString();
         option.textContent = `${voice.name} (${voice.lang})`;
-
-        // Select current voice
         if (index === this.currentSettings.voiceIndex) {
           option.selected = true;
         }
-
         voiceSelect.appendChild(option);
       });
     }
-
-    console.log('Voice dropdown updated with', voiceSelect.options.length, 'options');
   }
 
   /**
@@ -245,7 +203,6 @@ export class SettingsDialog {
 
     let voiceOptions = '';
     const voices = this.getAvailableVoices();
-    console.log('Creating modal with', voices.length, 'voices'); // Debug
 
     if (voices.length === 0) {
       voiceOptions = '<option value="0">Default Voice (Loading...)</option>';
@@ -255,8 +212,6 @@ export class SettingsDialog {
         voiceOptions += `<option value="${index}" ${selected}>${voice.name} (${voice.lang})</option>`;
       });
     }
-
-    console.log('Generated voice options:', voiceOptions.substring(0, 200) + '...'); // Debug
 
     const modalContents = `
     <div class="modal-container">
@@ -356,12 +311,11 @@ export class SettingsDialog {
     const rateSlider = document.getElementById('speech-rate') as HTMLInputElement;
     const rateValue = document.getElementById('rate-value') as HTMLElement;
     if (rateSlider && rateValue) {
-      // ADD focus listener for first-time instructions
       rateSlider.addEventListener('focus', () => {
         if (!this.announcedControls.has('rate')) {
           this.announcedControls.add('rate');
           setTimeout(() => {
-            this.screenReader.forceSpeek(
+            this.screenReader.forceSpeak(
               `Speech rate: ${rateSlider.value}. Use left and right arrow keys to adjust between 0.5 and 3.0.`
             );
           }, 100);
@@ -373,7 +327,6 @@ export class SettingsDialog {
         this.currentSettings.rate = value;
         rateValue.textContent = value.toString();
         this.applySettingsPreview();
-        // Only announce the value, not the instructions
         this.screenReader.testSpeechSettings(value.toString());
       });
     }
@@ -382,12 +335,11 @@ export class SettingsDialog {
     const pitchSlider = document.getElementById('speech-pitch') as HTMLInputElement;
     const pitchValue = document.getElementById('pitch-value') as HTMLElement;
     if (pitchSlider && pitchValue) {
-      // ADD focus listener for first-time instructions
       pitchSlider.addEventListener('focus', () => {
         if (!this.announcedControls.has('pitch')) {
           this.announcedControls.add('pitch');
           setTimeout(() => {
-            this.screenReader.forceSpeek(
+            this.screenReader.forceSpeak(
               `Speech pitch: ${pitchSlider.value}. Use left and right arrow keys to adjust between 0.5 and 2.0.`
             );
           }, 100);
@@ -407,12 +359,11 @@ export class SettingsDialog {
     const volumeSlider = document.getElementById('speech-volume') as HTMLInputElement;
     const volumeValue = document.getElementById('volume-value') as HTMLElement;
     if (volumeSlider && volumeValue) {
-      // ADD focus listener for first-time instructions
       volumeSlider.addEventListener('focus', () => {
         if (!this.announcedControls.has('volume')) {
           this.announcedControls.add('volume');
           setTimeout(() => {
-            this.screenReader.forceSpeek(
+            this.screenReader.forceSpeak(
               `Speech volume: ${volumeSlider.value}. Use left and right arrow keys to adjust between 0.1 and 1.0.`
             );
           }, 100);
@@ -436,7 +387,7 @@ export class SettingsDialog {
           this.announcedControls.add('enabled');
           setTimeout(() => {
             const status = enabledCheckbox.checked ? 'enabled' : 'disabled';
-            this.screenReader.forceSpeek(
+            this.screenReader.forceSpeak(
               `Screen reader checkbox. Currently ${status}. Press space to toggle.`
             );
           }, 100);
@@ -459,32 +410,23 @@ export class SettingsDialog {
     }
 
 
-    // Voice selection - FINAL WORKING VERSION
     const voiceSelect = document.getElementById('speech-voice') as HTMLSelectElement;
     if (voiceSelect) {
-      console.log('Voice select element found, setting up listeners');
-
       voiceSelect.addEventListener('focus', () => {
-        console.log('Voice dropdown focused');
         if (!this.announcedControls.has('voice')) {
           this.announcedControls.add('voice');
           setTimeout(() => {
             const voices = this.getAvailableVoices();
             const currentVoice = voices[voiceSelect.selectedIndex]?.name || 'No voice selected';
-            console.log('Announcing voice instructions:', currentVoice);
-            this.screenReader.forceSpeek(
+            this.screenReader.forceSpeak(
               `Voice selection dropdown. Currently selected: ${currentVoice}. Use up and down arrow keys to browse voices, Enter to select.`
             );
           }, 100);
         }
       });
 
-      // CATCH ARROW KEYS BEFORE BROWSER HANDLES THEM
       voiceSelect.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-          console.log('Arrow key intercepted:', e.key);
-
-          // Calculate what the new index will be
           let newIndex = voiceSelect.selectedIndex;
           const voices = this.getAvailableVoices();
 
@@ -494,46 +436,31 @@ export class SettingsDialog {
             newIndex--;
           }
 
-          // Update the select manually
           voiceSelect.selectedIndex = newIndex;
 
-          // Announce the new voice immediately
           const selectedVoice = voices[newIndex];
           if (selectedVoice) {
-            const voiceName = selectedVoice.name;
-            console.log('Announcing immediately:', voiceName);
-            this.screenReader.speakHighPriority(voiceName);
-
-            // Update settings immediately too
+            this.screenReader.speakHighPriority(selectedVoice.name);
             this.currentSettings.voiceIndex = newIndex;
             this.applySettingsPreview();
           }
 
-          // Prevent the browser's default arrow key behavior
           e.preventDefault();
         }
       });
 
-      // Keep INPUT event as backup (for mouse clicks, etc.)
-      voiceSelect.addEventListener('input', (e) => {
-        console.log(' INPUT event fired (backup)');
+      voiceSelect.addEventListener('input', () => {
         const voices = this.getAvailableVoices();
         const selectedVoice = voices[voiceSelect.selectedIndex];
-
         if (selectedVoice) {
-          const voiceName = selectedVoice.name;
-          console.log('Backup announcement:', voiceName);
-          this.screenReader.speakHighPriority(voiceName);
+          this.screenReader.speakHighPriority(selectedVoice.name);
         }
       });
 
-      // Keep CHANGE event for final confirmation
       voiceSelect.addEventListener('change', (e) => {
-        console.log('CHANGE event fired');
         const value = parseInt((e.target as HTMLSelectElement).value);
         this.currentSettings.voiceIndex = value;
         this.applySettingsPreview();
-        console.log(' Settings confirmed for voice index:', value);
       });
 
     } else {
@@ -553,57 +480,8 @@ export class SettingsDialog {
   }
 
   /**
- * Debug voice loading issues
- */
-  private debugVoiceLoading(): void {
-    console.log('=== VOICE DEBUGGING ===');
-
-    // Check if speechSynthesis is available
-    if (!('speechSynthesis' in window)) {
-      console.error('speechSynthesis not supported in this browser');
-      return;
-    }
-
-    // Check voices immediately
-    const voices = window.speechSynthesis.getVoices();
-    console.log('Voices available immediately:', voices.length);
-    console.log('Voice details:', voices);
-
-    // Check if voices are still loading
-    if (voices.length === 0) {
-      console.log('No voices found immediately, checking if they load...');
-
-      // Set up listener for when voices load
-      window.speechSynthesis.onvoiceschanged = () => {
-        const newVoices = window.speechSynthesis.getVoices();
-        console.log('Voices loaded after event:', newVoices.length);
-        console.log('New voice details:', newVoices);
-      };
-
-      // Try to trigger voice loading
-      console.log('Attempting to trigger voice loading...');
-      const testUtterance = new SpeechSynthesisUtterance('test');
-      window.speechSynthesis.speak(testUtterance);
-      window.speechSynthesis.cancel();
-    }
-
-    // Check the dropdown element
-    setTimeout(() => {
-      const voiceSelect = document.getElementById('speech-voice') as HTMLSelectElement;
-      if (voiceSelect) {
-        console.log('Voice dropdown found with options:', voiceSelect.options.length);
-        console.log('Dropdown HTML:', voiceSelect.innerHTML);
-      } else {
-        console.error('Voice dropdown element not found!');
-      }
-    }, 500);
-
-    console.log('=== END VOICE DEBUGGING ===');
-  }
-
-  /**
- * Install the settings functionality
- */
+   * Install the settings functionality.
+   */
   install() {
     this.createModalContent();
   }

@@ -11,7 +11,7 @@ interface BlockDescriptions {
     [key: string]: BlockDescriptionFunction;
 }
 
-// LOGIC BLOCKS
+/** Map from Blockly block type to a function that produces its spoken description. */
 const blockDescriptions: BlockDescriptions = {
     controls_if: (block) => {
         const ifInput = block.getInputTargetBlock('IF0');
@@ -71,7 +71,7 @@ const blockDescriptions: BlockDescriptions = {
         return `If ${ifMessage} then ${thenMessage}, else ${elseMessage}`;
     },
 
-    //LOOPS BLOCKS
+    // Loop blocks
     controls_repeat_ext: (block) => {
         const timesInput = block.getInputTargetBlock('TIMES');
         let timesMessage = 'NUM';
@@ -137,7 +137,7 @@ const blockDescriptions: BlockDescriptions = {
         return `For each item ${varName} in ${listMessage}, do inside ${doMessage}`;
     },
 
-    //MATH BLOCKS
+    // Math blocks
     math_number: (block) => {
         const numValue = block.getFieldValue('NUM');
         return `${numValue}`;
@@ -279,7 +279,7 @@ const blockDescriptions: BlockDescriptions = {
         return `Arctangent of point (${xMessage}, ${yMessage})`;
     },
 
-    // Text Blocks
+    // Text blocks
     text: (block) => {
         const text = block.getFieldValue('TEXT') || '';
         return text === '' ? 'text' : text;
@@ -433,8 +433,7 @@ const blockDescriptions: BlockDescriptions = {
         return `Prompt for ${typeMessages[type]} with message ${textMessage}`;
     },
 
-    // LISTS BLOCKS
-
+    // List blocks
     lists_create_with: (block, variables) => {
         const add0Input = block.getInputTargetBlock('ADD0');
         const add1Input = block.getInputTargetBlock('ADD1');
@@ -568,8 +567,7 @@ const blockDescriptions: BlockDescriptions = {
         return `Reverse ${listMessage}`;
     },
 
-    //VARIABLES BLOCKS
-
+    // Variable blocks
     variables_get: (block, variables) => {
         if (!variables) {
             return 'variable';
@@ -620,6 +618,14 @@ const blockDescriptions: BlockDescriptions = {
     },
 };
 
+/**
+ * Returns a human-readable description for a block, delegating to
+ * `blockDescriptions` when a handler is registered or falling back to the
+ * block type name.
+ *
+ * @param block The block to describe.
+ * @param variables Optional variable list used by variable/loop blocks.
+ */
 function getBlockMessage(block: Blockly.Block, variables?: Variable[]): string {
     const blockType = block.type;
     const descriptionTemplate = blockDescriptions[blockType];
@@ -629,6 +635,11 @@ function getBlockMessage(block: Blockly.Block, variables?: Variable[]): string {
     return `Block of type ${blockType}`;
 }
 
+/**
+ * Converts a delimiter character to a spoken word (e.g. `","` → `"comma"`).
+ *
+ * @param delim The delimiter string from a lists_split block.
+ */
 function getDelimiterMessage(delim: string): string {
     const delimiters: { [key: string]: string } = {
         ',': 'comma',

@@ -164,8 +164,8 @@ export class StackNavigationAction {
         // Use screen reader if available
         if ((window as any).accessibilityDemo?.getScreenReader) {
             const screenReader = (window as any).accessibilityDemo.getScreenReader();
-            if (screenReader && screenReader.forceSpeek) {
-                screenReader.forceSpeek(message);
+            if (screenReader && screenReader.forceSpeak) {
+                screenReader.forceSpeak(message);
             }
         }
     }
@@ -179,8 +179,8 @@ export class StackNavigationAction {
 
         if ((window as any).accessibilityDemo?.getScreenReader) {
             const screenReader = (window as any).accessibilityDemo.getScreenReader();
-            if (screenReader && screenReader.forceSpeek) {
-                screenReader.forceSpeek(message);
+            if (screenReader && screenReader.forceSpeak) {
+                screenReader.forceSpeak(message);
             }
         }
     }

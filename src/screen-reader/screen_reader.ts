@@ -7,11 +7,7 @@
 import * as Blockly from 'blockly';
 import { getFlyoutElement } from '../keyboard-navigation/workspace_utilities';
 import { getBlockMessage } from './block_descriptions';
-import { SpeechSettings } from './settings_dialog';
-
-// ============================================================================
-// INTERFACES AND TYPES
-// ============================================================================
+import { SpeechSettings, loadSpeechSettings } from './settings_dialog';
 
 interface MenuObservers {
   menuObserver: MutationObserver | null;
@@ -30,33 +26,20 @@ interface BlockPosition {
   total: number;
 }
 
-// ============================================================================
-// SCREEN READER CLASS
-// ============================================================================
-
 /**
  * A comprehensive screen reader implementation for Blockly that announces actions,
  * handles navigation feedback, and provides speech synthesis capabilities.
  */
 export class ScreenReader {
-  // -------------------------------------------------------------------------
-  // CORE PROPERTIES
-  // -------------------------------------------------------------------------
   private workspace: Blockly.WorkspaceSvg;
   private settings: SpeechSettings;
   private selectedVoice: SpeechSynthesisVoice | null = null;
   private isEnabled: boolean = true;
   private debugMode: boolean = true;
 
-  // -------------------------------------------------------------------------
-  // SPEECH SYNTHESIS PROPERTIES
-  // -------------------------------------------------------------------------
   private pendingMessage: string | null = null;
   private interruptionTimer: number | null = null;
 
-  // -------------------------------------------------------------------------
-  // NAVIGATION AND STATE TRACKING PROPERTIES
-  // -------------------------------------------------------------------------
   private lastAnnouncedBlockId: string | null = null;
   private lastWorkspaceNodeId: string | null = null;
   private lastSelectedBlockId: string | null = null;
@@ -64,15 +47,9 @@ export class ScreenReader {
   private hasLeftWorkspace: boolean = false;
   private cursorInterval: number | null = null;
 
-  // -------------------------------------------------------------------------
-  // MENU AND UI INTERACTION PROPERTIES
-  // -------------------------------------------------------------------------
   private menuObservers?: MenuObservers;
   private fieldEditingListeners: Map<string, FieldEditingListener> = new Map();
 
-  // -------------------------------------------------------------------------
-  // SPECIAL STATE FLAGS
-  // -------------------------------------------------------------------------
   private isDeletingAll: boolean = false;
   // Tracks areas/buttons that have already received their first-visit announcement
   // so we can give a shorter message on subsequent entries.
@@ -84,10 +61,6 @@ export class ScreenReader {
     return true;
   }
 
-  // ============================================================================
-  // CONSTRUCTOR AND INITIALIZATION
-  // ============================================================================
-
   /**
    * Constructs a new ScreenReader instance.
    * @param workspace The Blockly workspace to attach to.
@@ -98,7 +71,7 @@ export class ScreenReader {
 
     // Load settings first — initializeSpeechSynthesis() calls applyVoiceSettings()
     // which reads this.settings, so settings must be ready before that call.
-    this.settings = this.loadSettings();
+    this.settings = loadSpeechSettings();
 
     // Initialize speech synthesis
     this.initializeSpeechSynthesis();
@@ -110,38 +83,6 @@ export class ScreenReader {
     // Setup workspace cursor and field editing listeners
     this.setupWorkspaceCursorListener();
     this.setupFieldEditingListeners();
-  }
-
-  // ============================================================================
-  // SETTINGS MANAGEMENT
-  // ============================================================================
-
-  /**
-   * Load settings from localStorage with defaults
-   */
-  private loadSettings(): SpeechSettings {
-    const saved = localStorage.getItem('blockly-screenreader-settings');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.warn('Failed to parse saved settings, using defaults');
-      }
-    }
-    return this.getDefaultSettings();
-  }
-
-  /**
-   * Get default settings
-   */
-  private getDefaultSettings(): SpeechSettings {
-    return {
-      enabled: true,
-      rate: 1.7,
-      pitch: 1.0,
-      volume: 1.0,
-      voiceIndex: 0
-    };
   }
 
   /**
@@ -165,7 +106,7 @@ export class ScreenReader {
    * Test speech settings with a message
    */
   public testSpeechSettings(message: string): void {
-    this.forceSpeek(message);
+    this.forceSpeak(message);
   }
 
   /**
@@ -188,10 +129,6 @@ export class ScreenReader {
   public isScreenReaderEnabled(): boolean {
     return this.isEnabled;
   }
-
-  // ============================================================================
-  // SPEECH SYNTHESIS CORE
-  // ============================================================================
 
   /**
    * Initialize speech synthesis with proper voice loading
@@ -309,7 +246,7 @@ export class ScreenReader {
   /**
    * Force speak a message by clearing everything first (use sparingly)
    */
-  public forceSpeek(message: string): void {
+  public forceSpeak(message: string): void {
     if (!this.isEnabled) {
       this.debugLog(`Force speech blocked - screen reader disabled: "${message}"`);
       return;
@@ -349,10 +286,6 @@ export class ScreenReader {
       }, 200);
     }
   }
-
-  // ============================================================================
-  // TEXT PROCESSING AND SYMBOL CONVERSION
-  // ============================================================================
 
   /**
    * Convert mathematical and special symbols to readable text
@@ -494,10 +427,6 @@ export class ScreenReader {
     return 'custom color';
   }
 
-  // ============================================================================
-  // BLOCK DESCRIPTION AND NAVIGATION
-  // ============================================================================
-
   /**
    * Enhanced getBlockDescription method to include field values
    */
@@ -636,10 +565,6 @@ export class ScreenReader {
 
     this.speakHighPriority(`Selected ${description}`);
   }
-
-  // ============================================================================
-  // NAVIGATION AND CURSOR MANAGEMENT
-  // ============================================================================
 
   /**
    * Set up an interval to check for workspace cursor movements
@@ -783,10 +708,6 @@ export class ScreenReader {
     }
   }
 
-  // ============================================================================
-  // EVENT LISTENERS AND UI INTERACTION
-  // ============================================================================
-
   /**
    * Initialize event listeners for workspace changes.
    */
@@ -877,14 +798,14 @@ export class ScreenReader {
           const blocksToClean = this.workspace.getTopBlocks(false).length;
           if (blocksToClean > 0) {
             setTimeout(() => {
-              this.forceSpeek(`Cleaned up workspace. blocks organized.`);
+              this.forceSpeak(`Cleaned up workspace. blocks organized.`);
             }, 150);
           }
           break;
 
         case 'd':
           this.isDeletingAll = true;
-          this.forceSpeek('All blocks are deleted');
+          this.forceSpeak('All blocks are deleted');
           setTimeout(() => {
             this.isDeletingAll = false;
           }, 1000);
@@ -981,10 +902,6 @@ export class ScreenReader {
       }, 500);
     }
   }
-
-  // ============================================================================
-  // MENU AND DROPDOWN NAVIGATION
-  // ============================================================================
 
   /**
    * Set up comprehensive Blockly menu listeners with better symbol handling
@@ -1423,10 +1340,6 @@ export class ScreenReader {
     return element.id || "Unnamed element";
   }
 
-  // ============================================================================
-  // FIELD EDITING SUPPORT
-  // ============================================================================
-
   /**
    * Set up field editing listeners for text and number inputs
    */
@@ -1595,10 +1508,6 @@ export class ScreenReader {
     this.fieldEditingListeners.clear();
   }
 
-  // ============================================================================
-  // UTILITY METHODS
-  // ============================================================================
-
   /**
    * Debug logging function
    */
@@ -1607,10 +1516,6 @@ export class ScreenReader {
       console.log(`[ScreenReader] ${message}`);
     }
   }
-
-  // ============================================================================
-  // CLEANUP AND DISPOSAL
-  // ============================================================================
 
   /**
    * Dispose of the screen reader and clean up all listeners
