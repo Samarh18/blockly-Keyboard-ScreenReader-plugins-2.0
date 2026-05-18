@@ -78,7 +78,7 @@
       font-size: 18px;
       font-weight: 700;
       background-color: #4CAF50;
-      color: white;
+      color: #000000; /* was white (2.78:1 → 7.56:1 on #4CAF50; normal text needs 4.5:1) */
       border: 2px solid #4CAF50;
       border-radius: 6px;
       cursor: pointer;
@@ -96,7 +96,7 @@
     }
 
     #run:focus {
-      outline: 4px solid #ff6600;
+      outline: 4px solid #c25400; /* was #ff6600 (2.94:1 → 4.61:1 on white; focus ring needs 3:1) */
       outline-offset: 2px;
       background-color: #45a049;
     }
@@ -108,7 +108,7 @@
       font-size: 18px;
       font-weight: 700;
       background-color: #2196F3;
-      color: white;
+      color: #000000; /* was white (3.13:1 → 6.72:1 on #2196F3; normal text needs 4.5:1) */
       border: 2px solid #2196F3;
       border-radius: 6px;
       cursor: pointer;
@@ -126,7 +126,7 @@
     }
 
     #settings-button:focus {
-      outline: 4px solid #ff6600;
+      outline: 4px solid #c25400; /* was #ff6600 (2.94:1 → 4.61:1 on white; focus ring needs 3:1) */
       outline-offset: 2px;
       background-color: #1976D2;
     }
@@ -156,7 +156,7 @@
     }
 
     #help-button:focus {
-      outline: 4px solid #ff6600;
+      outline: 4px solid #c25400; /* was #ff6600 (2.94:1 → 4.61:1 on white; focus ring needs 3:1) */
       outline-offset: 2px;
       background-color: #7B1FA2;
     }

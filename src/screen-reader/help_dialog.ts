@@ -372,7 +372,7 @@ Blockly.Css.register(`
 .help-section h2:focus,
 .help-section h3:focus,
 .help-section p:focus {
-  outline: 3px solid #ffa200;
+  outline: 3px solid #b36800; /* was #ffa200 (2.02:1 → 4.29:1 on white; focus ring needs 3:1) */
   outline-offset: 2px;
   border-radius: 4px;
   background-color: #FFFBEB;

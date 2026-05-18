@@ -193,8 +193,8 @@ export class ShortcutDialog {
 Blockly.Css.register(`
 :root {
   --divider-border-color: #eee;
-  --key-border-color: #ccc;
-  --shortcut-modal-border-color: #9aa0a6;
+  --key-border-color: #767676; /* was #ccc (1.61:1 → 4.55:1 on white; UI component needs 3:1) */
+  --shortcut-modal-border-color: #6B7280; /* was #9aa0a6 (2.64:1 → 4.83:1 on white; dialog border needs 3:1) */
 }
 
 .shortcut-modal {
@@ -296,7 +296,7 @@ Blockly.Css.register(`
 }
 
 .shortcut-table h2 {
-  border-bottom: 1px solid #999;
+  border-bottom: 1px solid #767676; /* was #999 (2.85:1 → 4.55:1 on white; UI component needs 3:1) */
   font-size: 1em;
   padding-block-end: 0.5em;
 }
@@ -312,7 +312,7 @@ Blockly.Css.register(`
 }
 
 .shortcut-table .separator {
-  color: gray;
+  color: #6B6B6B; /* was gray/#808080 (3.95:1 → 5.33:1 on white; normal text needs 4.5:1) */
   display: inline-block;
   padding: 0 0.5em;
 }

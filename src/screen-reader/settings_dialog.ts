@@ -622,7 +622,7 @@ Blockly.Css.register(`
 
 /* ── Shared dialog design tokens ───────────────────────────────────────────
    Primary:  #4F46E5  (indigo-600, contrast 5.7:1 on white — passes WCAG AA)
-   Focus:    #ffa200  (amber, retained from project convention)
+   Focus:    #b36800  (dark amber, 4.29:1 on white; was #ffa200 at 2.02:1 which failed WCAG 1.4.11)
    Text:     #1F2937 / #4B5563
    Border:   #E5E7EB
    ───────────────────────────────────────────────────────────────────────── */
@@ -709,7 +709,7 @@ Blockly.Css.register(`
 }
 
 .close-modal:focus {
-  outline: 3px solid #ffa200;
+  outline: 3px solid #b36800; /* was #ffa200 (2.02:1 → 4.29:1 on white; focus ring needs 3:1) */
   outline-offset: 2px;
 }
 
@@ -765,7 +765,7 @@ Blockly.Css.register(`
 }
 
 .setting-group input[type="range"]:focus {
-  outline: 3px solid #ffa200;
+  outline: 3px solid #b36800; /* was #ffa200 (2.02:1 → 4.29:1 on white; focus ring needs 3:1) */
   outline-offset: 4px;
   border-radius: 3px;
 }
@@ -789,7 +789,7 @@ Blockly.Css.register(`
 }
 
 .setting-group select:focus {
-  outline: 3px solid #ffa200;
+  outline: 3px solid #b36800; /* was #ffa200 (2.02:1 → 4.29:1 on white; focus ring needs 3:1) */
   outline-offset: 2px;
   border-color: #4F46E5;
 }
@@ -814,7 +814,7 @@ Blockly.Css.register(`
 }
 
 .checkbox-label input[type="checkbox"]:focus {
-  outline: 3px solid #ffa200;
+  outline: 3px solid #b36800; /* was #ffa200 (2.02:1 → 4.29:1 on white; focus ring needs 3:1) */
   outline-offset: 2px;
 }
 
@@ -850,7 +850,7 @@ Blockly.Css.register(`
 }
 
 .dialog-btn:focus {
-  outline: 3px solid #ffa200;
+  outline: 3px solid #b36800; /* was #ffa200 (2.02:1 → 4.29:1 on white; focus ring needs 3:1) */
   outline-offset: 2px;
 }
 
