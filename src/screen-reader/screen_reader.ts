@@ -727,7 +727,11 @@ export class ScreenReader {
           }
         }
 
-        this.speakHighPriority(`Selected ${description}`);
+        const childCount = block.getChildren(false).length;
+        const childSuffix = childCount > 0
+          ? `, contains ${childCount} ${childCount === 1 ? 'block' : 'blocks'}`
+          : ', empty';
+        this.speakHighPriority(`Selected ${description}${childSuffix}`);
       } else {
         this.speakHighPriority("Unknown block");
       }
