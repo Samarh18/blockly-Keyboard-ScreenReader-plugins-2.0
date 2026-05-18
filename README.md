@@ -112,6 +112,16 @@ The screen reader provides detailed descriptions for:
 - **Automatic Announcement**: Menu contents are announced when opened
 - **Mathematical Function Menus**: Special support for math functions with clear pronunciation
 
+## Recent Updates
+
+> These updates were not co-designed with students. They reflect the author's own understanding of what would be useful based on the thesis study, but have not been validated with users.
+
+### WCAG Contrast Compliance
+All colors in the dialogs (settings, help, shortcut list) and the test page were checked against WCAG 2.1 AA contrast requirements. Any color pair that failed — including focus ring outlines, key badge borders, separator text, and button labels — was corrected. The amber focus ring color was darkened from `#ffa200` to `#b36800` so it meets the minimum 3:1 contrast ratio against white backgrounds required for UI components.
+
+### Block Child Count Announcement
+When the keyboard cursor moves onto a block in the workspace, the screen reader now also says how many blocks are directly inside it. For example: *"Selected repeat 10 times block, contains 3 blocks"*. If the block is empty, it says *"empty"* instead. This does not apply to blocks in the toolbox or flyout — only on the main workspace.
+
 ## Current Status
 
 This project is actively in development and not ready for production use. It builds on the Blockly team's keyboard navigation plugin and the thesis work from 1.0. Features added here are exploratory — they have not been co-designed or tested with users and should be treated as works-in-progress.
