@@ -822,6 +822,47 @@ export class ScreenReader {
       }
     });
 
+    // Global "I" key: announce where focus currently is
+    document.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() !== 'i') return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      // Skip when typing in any text input
+      const target = e.target as HTMLElement;
+      const tagName = target.tagName.toLowerCase();
+      if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' ||
+        target.isContentEditable || !!target.closest('.blocklyHtmlInput')) {
+        return;
+      }
+
+      const active = document.activeElement as HTMLElement | null;
+
+      // Button has focus — announce its label
+      if (active?.tagName === 'BUTTON') {
+        const label = active.textContent?.trim() || active.getAttribute('aria-label') || 'Unknown';
+        this.speakHighPriority(`${label} button`);
+        return;
+      }
+
+      // Workspace SVG has focus
+      const wsSvg = this.workspace.getParentSvg();
+      if (wsSvg.contains(active)) {
+        this.speakHighPriority('Workspace');
+        return;
+      }
+
+      // Toolbox or flyout has focus → "Blocks menu"
+      const toolbox = this.workspace.getToolbox();
+      const toolboxDiv = toolbox instanceof Blockly.Toolbox ? toolbox.HtmlDiv : null;
+      const flyoutEl = getFlyoutElement(this.workspace);
+      const inToolbox = !!(toolboxDiv && toolboxDiv.contains(active));
+      const inFlyout = !!(flyoutEl && flyoutEl.contains(active));
+      if (inToolbox || inFlyout) {
+        this.speakHighPriority('Blocks menu');
+        return;
+      }
+    });
+
     // Workspace action shortcuts (C for cleanup, D for delete all)
     document.addEventListener('keydown', (e) => {
       const workspaceHasFocus = document.activeElement === this.workspace.getParentSvg() ||

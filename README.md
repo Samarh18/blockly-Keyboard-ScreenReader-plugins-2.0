@@ -23,6 +23,7 @@ The original thesis demo (1.0) can be found at: [https://samarh18.github.io/bloc
 - **W key**: Focus the workspace for block editing
 - **S key**: Focus the Settings button
 - **H key**: Focus the Help button
+- **I key**: Announce current location in the interface — says "Workspace", "Blocks menu", or the focused button name (e.g. "Settings button") *(2.0)*
 
 ## Usage Guidelines
 
@@ -118,6 +119,9 @@ The screen reader provides detailed descriptions for:
 
 ### WCAG Contrast Compliance
 All colors in the dialogs (settings, help, shortcut list) and the test page were checked against WCAG 2.1 AA contrast requirements. Any color pair that failed — including focus ring outlines, key badge borders, separator text, and button labels — was corrected. The amber focus ring color was darkened from `#ffa200` to `#b36800` so it meets the minimum 3:1 contrast ratio against white backgrounds required for UI components.
+
+### Location Announcer — "I" Key *(2.0)*
+Pressing **I** from anywhere on the page announces where focus currently is. It says **"Workspace"** if the Blockly canvas has focus, **"Blocks menu"** if the toolbox or flyout has focus, or the button name (e.g. **"Settings button"**, **"Help button"**) if a button has focus. The shortcut does not interfere with existing shortcuts or the toolbox's first-letter category-navigation behaviour.
 
 ### Block Child Count Announcement
 When the keyboard cursor moves onto a block in the workspace, the screen reader now also says how many blocks are directly inside it. For example: *"Selected repeat 10 times block, contains 3 blocks"*. If the block is empty, it says *"empty"* instead. This does not apply to blocks in the toolbox or flyout — only on the main workspace.
