@@ -1,21 +1,18 @@
 # Blockly Accessibility Plugins 2.0
 
-This project is a continuation of thesis research that enhanced the accessibility of Blockly by combining the existing keyboard navigation plugin with additional screen reader support, making block-based programming more inclusive for users with visual impairments and mobility limitations.
+This project is a continuation of thesis research that enhanced the accessibility of Blockly by combining the keyboard navigation plugin with additional screen reader support, making block-based programming more inclusive for users with visual impairments and mobility limitations.
 
-**About this version:** The original work (1.0) was co-designed and evaluated with students as part of a thesis study. This 2.0 version moves beyond that work and is driven by the author's own ideas, as well as features that were briefly discussed with students during the study but were never fully implemented or tested. Nothing here has been co-designed or validated with users — it is exploratory and experimental.
+**About this version:** The original work (1.0) was co-designed and evaluated with students as part of a thesis study. This 2.0 version moves beyond that work and is driven by the author's own ideas, as well as features that were briefly discussed with students during the study but were never fully implemented or tested. Nothing here has been co-designed or validated with users, it is exploratory and experimental.
 
 ## Demo
 
 A working demonstration of this 2.0 implementation is available at: [https://samarh18.github.io/blockly-Keyboard-ScreenReader-plugins-2.0/](https://samarh18.github.io/blockly-Keyboard-ScreenReader-plugins-2.0/)
-
-The original thesis demo (1.0) can be found at: [https://samarh18.github.io/blockly-Keyboard-ScreenReader-plugins/](https://samarh18.github.io/blockly-Keyboard-ScreenReader-plugins/)
 
 ## Keyboard Shortcuts
 
 ### Workspace Shortcuts (Work only when focusing on the workspace)
 - **O key**: Navigate to root block of current stack
 - **N key**: Navigate to next stack of blocks
-- **C key**: Clean up workspace (organize blocks automatically)
 - **D key**: Delete all blocks from workspace
 
 ### Global Shortcuts (Work from anywhere on the page)
@@ -23,7 +20,7 @@ The original thesis demo (1.0) can be found at: [https://samarh18.github.io/bloc
 - **W key**: Focus the workspace for block editing
 - **S key**: Focus the Settings button
 - **H key**: Focus the Help button
-- **I key**: Announce current location in the interface — says "Workspace", "Blocks menu", or the focused button name (e.g. "Settings button") *(2.0)*
+- **I key**: Announce current location in the interface *(2.0)*
 
 ## Usage Guidelines
 
@@ -93,7 +90,7 @@ The accessibility demo includes a customizable settings window to personalize yo
 
 #### Automatic Announcements
 - **Block Navigation**: Announces block type, position, and connections
-- **Stack Navigation**: Announces current stack position (e.g., "Stack 2 of 5")
+- **Stack Navigation**: Announces current stack position 
 - **Menu Navigation**: Describes menu items and navigation options
 - **Context Awareness**: Provides relevant information based on current location in the workspace
 
@@ -120,12 +117,15 @@ The screen reader provides detailed descriptions for:
 ### WCAG Contrast Compliance
 All colors in the dialogs (settings, help, shortcut list) and the test page were checked against WCAG 2.1 AA contrast requirements. Any color pair that failed — including focus ring outlines, key badge borders, separator text, and button labels — was corrected. The amber focus ring color was darkened from `#ffa200` to `#b36800` so it meets the minimum 3:1 contrast ratio against white backgrounds required for UI components.
 
-### Location Announcer — "I" Key *(2.0)*
+### Location Announcer — "I" Key 
 Pressing **I** from anywhere on the page announces where focus currently is. It says **"Workspace"** if the Blockly canvas has focus, **"Blocks menu"** if the toolbox or flyout has focus, or the button name (e.g. **"Settings button"**, **"Help button"**) if a button has focus. The shortcut does not interfere with existing shortcuts or the toolbox's first-letter category-navigation behaviour.
+
+### Auto-Layout Column System
+The manual **C key** cleanup shortcut has been removed and replaced with an automatic layout system. Whenever a new disconnected block is added to the workspace, or the workspace finishes loading, all top-level stacks are automatically arranged into a single column on the left edge of the canvas. Stacks start at a fixed offset of 20px from the left and 20px from the top; each subsequent stack is placed below the previous one with a 40px vertical gap, calculated using each stack's actual rendered height. Blocks that are connected to a parent block are never repositioned.
 
 ### Block Child Count Announcement
 When the keyboard cursor moves onto a block in the workspace, the screen reader now also says how many blocks are directly inside it. For example: *"Selected repeat 10 times block, contains 3 blocks"*. If the block is empty, it says *"empty"* instead. This does not apply to blocks in the toolbox or flyout — only on the main workspace.
 
 ## Current Status
 
-This project is actively in development and not ready for production use. It builds on the Blockly team's keyboard navigation plugin and the thesis work from 1.0. Features added here are exploratory — they have not been co-designed or tested with users and should be treated as works-in-progress.
+This project is actively in development and not ready for production use. It builds on the keyboard navigation plugin and the thesis work from 1.0. Features added here are exploratory — they have not been co-designed or tested with users and should be treated as works-in-progress.
