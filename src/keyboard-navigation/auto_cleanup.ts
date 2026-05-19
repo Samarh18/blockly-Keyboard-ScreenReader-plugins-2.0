@@ -32,8 +32,12 @@ export class AutoCleanup {
 
     private initEventListeners(): void {
         this.workspace.addChangeListener((event: Blockly.Events.Abstract) => {
-            if (event.type === Blockly.Events.BLOCK_CREATE ||
-                event.type === Blockly.Events.FINISHED_LOADING) {
+            if (event.type === Blockly.Events.BLOCK_CREATE) {
+                // Run synchronously so the block is at its column position
+                // before the browser paints — eliminates the jump-then-snap flash.
+                this.performLayout();
+            } else if (event.type === Blockly.Events.FINISHED_LOADING) {
+                // Debounce for batch workspace loads (many blocks fire at once).
                 this.scheduleLayout();
             }
         });
