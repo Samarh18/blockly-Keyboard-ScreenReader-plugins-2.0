@@ -5,88 +5,78 @@
  */
 
 /**
- * @fileoverview Automatic workspace cleanup functionality.
- * Organizes blocks automatically when they are added or removed.
+ * @fileoverview Auto-layout system that organizes top-level block stacks
+ * into a single column on the left edge of the workspace.
  */
 
 import * as Blockly from 'blockly/core';
 
 /**
- * Class to handle automatic workspace cleanup when blocks are added or removed.
- * This keeps the workspace organized without requiring manual intervention.
+ * Organizes all top-level (parentless) block stacks into a single left-edge
+ * column whenever a block is added or the workspace finishes loading.
+ * Layout constants: x=20, y=20 start, 40px vertical gap between stacks.
  */
 export class AutoCleanup {
     private workspace: Blockly.WorkspaceSvg;
-    private cleanupTimeout: number | null = null;
-    private readonly CLEANUP_DELAY = 100; // Delay in ms before cleanup
+    private layoutTimeout: number | null = null;
+    private readonly LAYOUT_DELAY = 100;
+    private static readonly LEFT_OFFSET = 20;
+    private static readonly TOP_OFFSET = 20;
+    private static readonly VERTICAL_GAP = 40;
 
-    /**
-     * Constructs the auto cleanup functionality.
-     *
-     * @param workspace The workspace that will be automatically organized.
-     */
     constructor(workspace: Blockly.WorkspaceSvg) {
         this.workspace = workspace;
         this.initEventListeners();
+        this.scheduleLayout();
     }
 
-    /**
-     * Initialize event listeners for block creation and deletion.
-     */
     private initEventListeners(): void {
         this.workspace.addChangeListener((event: Blockly.Events.Abstract) => {
-            // Only cleanup for create and delete events
             if (event.type === Blockly.Events.BLOCK_CREATE ||
-                event.type === Blockly.Events.BLOCK_DELETE) {
-                this.scheduleCleanup();
+                event.type === Blockly.Events.FINISHED_LOADING) {
+                this.scheduleLayout();
             }
         });
     }
 
-    /**
-     * Schedule a cleanup with debouncing to avoid excessive cleanups.
-     * If multiple blocks are added/removed quickly, this will only
-     * clean up once after the operations are complete.
-     */
-    private scheduleCleanup(): void {
-        // Clear any existing timeout
-        if (this.cleanupTimeout) {
-            clearTimeout(this.cleanupTimeout);
+    private scheduleLayout(): void {
+        if (this.layoutTimeout) {
+            clearTimeout(this.layoutTimeout);
         }
-
-        // Schedule new cleanup
-        this.cleanupTimeout = window.setTimeout(() => {
-            this.performCleanup();
-            this.cleanupTimeout = null;
-        }, this.CLEANUP_DELAY);
+        this.layoutTimeout = window.setTimeout(() => {
+            this.performLayout();
+            this.layoutTimeout = null;
+        }, this.LAYOUT_DELAY);
     }
 
-    /**
-     * Perform the actual workspace cleanup.
-     */
-    private performCleanup(): void {
-        // Only cleanup if workspace is not read-only and has blocks
-        if (!this.workspace.options.readOnly &&
-            this.workspace.getTopBlocks(false).length > 0) {
+    private performLayout(): void {
+        if (this.workspace.options.readOnly) return;
 
-            // Disable events during cleanup to avoid infinite loops
-            Blockly.Events.disable();
-            try {
-                this.workspace.cleanUp();
-            } finally {
-                Blockly.Events.enable();
+        const topBlocks = this.workspace.getTopBlocks(false).filter(
+            (block) => block.getParent() === null,
+        );
+
+        if (topBlocks.length === 0) return;
+
+        Blockly.Events.disable();
+        try {
+            let y = AutoCleanup.TOP_OFFSET;
+            for (const block of topBlocks) {
+                block.moveTo(
+                    new Blockly.utils.Coordinate(AutoCleanup.LEFT_OFFSET, y),
+                );
+                const size = block.getHeightWidth();
+                y += size.height + AutoCleanup.VERTICAL_GAP;
             }
+        } finally {
+            Blockly.Events.enable();
         }
     }
 
-    /**
-     * Dispose of the auto cleanup functionality.
-     * Clears any pending cleanup operations.
-     */
     dispose(): void {
-        if (this.cleanupTimeout) {
-            clearTimeout(this.cleanupTimeout);
-            this.cleanupTimeout = null;
+        if (this.layoutTimeout) {
+            clearTimeout(this.layoutTimeout);
+            this.layoutTimeout = null;
         }
     }
 }

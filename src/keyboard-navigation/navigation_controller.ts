@@ -343,19 +343,6 @@ export class NavigationController {
         keyCodes: [KeyCodes.B],
       },
 
-      /** Clean up the workspace. */
-      cleanup: {
-        name: Constants.SHORTCUT_NAMES.CLEAN_UP,
-        preconditionFn: (workspace) =>
-          this.navigation.canCurrentlyEdit(workspace) &&
-          workspace.getTopBlocks(false).length > 0,
-        callback: (workspace) => {
-          workspace.cleanUp();
-          return true;
-        },
-        keyCodes: [KeyCodes.C],
-      },
-
       /** Delete all blocks from the workspace. */
       deleteAll: {
         name: 'DELETE_ALL_BLOCKS',

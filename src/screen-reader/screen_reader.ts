@@ -784,7 +784,7 @@ export class ScreenReader {
       }
     });
 
-    // Workspace action shortcuts (C for cleanup, D for delete all)
+    // Workspace action shortcut (D for delete all)
     document.addEventListener('keydown', (e) => {
       const workspaceHasFocus = document.activeElement === this.workspace.getParentSvg() ||
         this.workspace.getParentSvg().contains(document.activeElement as Node);
@@ -793,23 +793,12 @@ export class ScreenReader {
         return;
       }
 
-      switch (e.key.toLowerCase()) {
-        case 'c':
-          const blocksToClean = this.workspace.getTopBlocks(false).length;
-          if (blocksToClean > 0) {
-            setTimeout(() => {
-              this.forceSpeak(`Cleaned up workspace. blocks organized.`);
-            }, 150);
-          }
-          break;
-
-        case 'd':
-          this.isDeletingAll = true;
-          this.forceSpeak('All blocks are deleted');
-          setTimeout(() => {
-            this.isDeletingAll = false;
-          }, 1000);
-          break;
+      if (e.key.toLowerCase() === 'd') {
+        this.isDeletingAll = true;
+        this.forceSpeak('All blocks are deleted');
+        setTimeout(() => {
+          this.isDeletingAll = false;
+        }, 1000);
       }
     });
   }

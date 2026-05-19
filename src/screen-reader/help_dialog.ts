@@ -135,10 +135,9 @@ export class HelpDialog {
 
             <div class="help-section">
               <h2 tabindex="0">Workspace Shortcuts (Work only when focusing on workspace)</h2>
-              <p tabindex="0"><strong>C key</strong> - Clean up workspace and organize blocks automatically</p>
               <p tabindex="0"><strong>D key</strong> - Delete all blocks from workspace</p>
               <p tabindex="0"><strong>O key</strong> - Navigate to root block of current stack</p>
-              <p tabindex="0"><strong>Auto-cleanup:</strong> Workspace automatically organizes when blocks are added or removed</p>
+              <p tabindex="0"><strong>Auto-layout:</strong> Blocks are automatically arranged in a column on the left edge when added</p>
               <p tabindex="0"><strong>N key</strong> - Navigate to next stack of blocks</p>
             </div>
 
