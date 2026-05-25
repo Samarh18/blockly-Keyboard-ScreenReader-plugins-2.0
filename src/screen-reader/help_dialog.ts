@@ -35,6 +35,9 @@ export class HelpDialog {
 
     // Check if this is the first visit
     this.hasOpenedBefore = localStorage.getItem('help-dialog-opened') === 'true';
+
+    this.createModalContent();
+    this.autoOpenOnFirstVisit();
   }
 
   /**
@@ -262,14 +265,6 @@ export class HelpDialog {
    * Install the help dialog
    */
   install() {
-    // Create the modal content
-    this.createModalContent();
-
-    // NOTE: H key shortcut is now handled by global_shortcuts.ts
-    // which focuses the help button, and the button click opens this dialog
-
-    // Auto-open on first visit
-    this.autoOpenOnFirstVisit();
   }
 
   /**

@@ -43,11 +43,9 @@ export class AccessibilityDemo {
 
         // Initialize settings dialog
         this.settingsDialog = new SettingsDialog(this.screenReader);
-        this.settingsDialog.install();
 
         // Initialize help dialog
         this.helpDialog = new HelpDialog(this.screenReader);
-        this.helpDialog.install();
 
         // Make settings globally accessible for global shortcuts
         (window as any).settingsDialog = this.settingsDialog;

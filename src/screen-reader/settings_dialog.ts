@@ -72,6 +72,8 @@ export class SettingsDialog {
     this.currentSettings = loadSpeechSettings();
     this.currentSettings.enabled = this.screenReader.isScreenReaderEnabled();
     this.originalSettings = { ...this.currentSettings };
+
+    this.createModalContent();
   }
 
   /**
@@ -483,7 +485,6 @@ export class SettingsDialog {
    * Install the settings functionality.
    */
   install() {
-    this.createModalContent();
   }
 
   /**
