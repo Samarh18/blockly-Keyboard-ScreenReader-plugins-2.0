@@ -114,6 +114,15 @@ The screen reader provides detailed descriptions for:
 
 > These updates were not co-designed with students. They reflect the author's own understanding of what would be useful based on the thesis study, but have not been validated with users.
 
+### Workspace floor: bounded navigation at the end of all blocks
+Navigating past the last block or last stack now lands on an explicit "workspace floor" — an empty area below the blocks — instead of wrapping or doing nothing.
+
+- **Down arrow** past the last block → cursor moves to the empty workspace area. Screen reader announces *"End of blocks. Empty workspace area. Press Up arrow to return to blocks."*
+- **Up arrow** from the workspace floor → cursor returns to the root of the last stack.
+- **N key** past the last stack → cursor moves to the workspace floor. Screen reader announces *"End of stacks. Empty workspace area. Press N to return to the first stack."*
+- **N key** from the workspace floor → wraps back to the first stack.
+- **Enter** on the workspace floor is blocked: it previously opened the flyout and could let students add a disconnected block. It now announces *"Empty workspace area. Press Up arrow to return to blocks."* instead.
+
 ### Remove shortcut dialog and toggleShortcutDialog()
 The built-in keyboard-shortcut reference dialog (`ShortcutDialog`) and its associated `toggleShortcutDialog()` methods have been removed from `KeyboardNavigation`, `NavigationController`, and the integration layer. The Help dialog already serves this role, so the shortcut dialog was redundant. The now-unused `shortcut_dialog.ts` file was also deleted.
 

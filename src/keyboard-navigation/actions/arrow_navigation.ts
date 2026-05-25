@@ -8,6 +8,12 @@ import {ASTNode, ShortcutRegistry, utils as BlocklyUtils} from 'blockly/core';
 
 import type {Field, Toolbox, WorkspaceSvg} from 'blockly/core';
 
+/** Speaks a message via the global accessibilityDemo screen reader. */
+function speakMessage(message: string): void {
+  const sr = (window as any).accessibilityDemo?.getScreenReader?.();
+  sr?.forceSpeak?.(message);
+}
+
 import * as Constants from '../constants';
 import type {Navigation} from '../navigation';
 
@@ -41,6 +47,61 @@ export class ArrowNavigation {
       return (curNode.getLocation() as Field).onShortcut(shortcut);
     }
     return false;
+  }
+
+  /**
+   * Moves the cursor to an empty workspace position below the last stack and
+   * announces that the student has reached the end of all blocks.
+   */
+  private goToWorkspaceFloor(workspace: WorkspaceSvg): void {
+    const cursor = workspace.getCursor();
+    if (!cursor) return;
+
+    const topBlocks = workspace.getTopBlocks(false);
+    let wsX = 20;
+    let wsY = 200;
+    if (topBlocks.length > 0) {
+      const lowest = topBlocks.sort(
+        (a, b) =>
+          b.getRelativeToSurfaceXY().y - a.getRelativeToSurfaceXY().y,
+      )[0];
+      const pos = lowest.getRelativeToSurfaceXY();
+      wsX = pos.x;
+      wsY = pos.y + 150;
+    }
+
+    const wsNode = ASTNode.createWorkspaceNode(
+      workspace,
+      new BlocklyUtils.Coordinate(wsX, wsY),
+    );
+    cursor.setCurNode(wsNode);
+    speakMessage('End of blocks. Empty workspace area. Press Up arrow to return to blocks.');
+  }
+
+  /**
+   * Moves the cursor back to the root of the last stack (used when pressing
+   * Up from the workspace floor).
+   */
+  private goToLastBlock(workspace: WorkspaceSvg): void {
+    const cursor = workspace.getCursor();
+    if (!cursor) return;
+
+    const topBlocks = workspace.getTopBlocks(false);
+    if (topBlocks.length === 0) return;
+
+    const sorted = topBlocks.sort((a, b) => {
+      const aPos = a.getRelativeToSurfaceXY();
+      const bPos = b.getRelativeToSurfaceXY();
+      if (Math.abs(aPos.y - bPos.y) > 50) return aPos.y - bPos.y;
+      return aPos.x - bPos.x;
+    });
+
+    const lastRoot = sorted[sorted.length - 1];
+    const blockNode = ASTNode.createBlockNode(lastRoot);
+    if (blockNode) {
+      cursor.setCurNode(blockNode);
+      speakMessage('Back to blocks.');
+    }
   }
 
   /**
@@ -137,12 +198,20 @@ export class ArrowNavigation {
             case Constants.STATE.WORKSPACE:
               isHandled = this.fieldShortcutHandler(workspace, shortcut);
               if (!isHandled && workspace) {
-                if (
-                  !this.navigation.defaultWorkspaceCursorPositionIfNeeded(
-                    workspace,
-                  )
+                const cursor = workspace.getCursor();
+                if (cursor?.getCurNode()?.getType() === ASTNode.types.WORKSPACE) {
+                  // Already on the workspace floor — stay and re-announce.
+                  speakMessage('End of blocks. Press Up arrow to return to blocks.');
+                } else if (
+                  !this.navigation.defaultWorkspaceCursorPositionIfNeeded(workspace)
                 ) {
-                  workspace.getCursor()?.next();
+                  const nodeBefore = cursor?.getCurNode();
+                  cursor?.next();
+                  const nodeAfter = cursor?.getCurNode();
+                  // If the cursor didn't move, we've passed the last block.
+                  if (nodeBefore !== null && nodeBefore === nodeAfter) {
+                    this.goToWorkspaceFloor(workspace);
+                  }
                 }
                 isHandled = true;
               }
@@ -179,11 +248,11 @@ export class ArrowNavigation {
             case Constants.STATE.WORKSPACE:
               isHandled = this.fieldShortcutHandler(workspace, shortcut);
               if (!isHandled) {
-                if (
-                  !this.navigation.defaultWorkspaceCursorPositionIfNeeded(
-                    workspace,
-                    'last',
-                  )
+                if (workspace.getCursor()?.getCurNode()?.getType() === ASTNode.types.WORKSPACE) {
+                  // On the workspace floor — go back up to the last block.
+                  this.goToLastBlock(workspace);
+                } else if (
+                  !this.navigation.defaultWorkspaceCursorPositionIfNeeded(workspace, 'last')
                 ) {
                   workspace.getCursor()?.prev();
                 }

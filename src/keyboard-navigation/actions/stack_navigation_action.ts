@@ -62,10 +62,6 @@ export class StackNavigationAction {
 
         // Get all top-level blocks (stacks)
         const topBlocks = workspace.getTopBlocks(false);
-        if (topBlocks.length <= 1) {
-            this.announceNoOtherStacks();
-            return false;
-        }
 
         // Sort blocks by position (left to right, top to bottom)
         const sortedBlocks = topBlocks.sort((a, b) => {
@@ -80,8 +76,23 @@ export class StackNavigationAction {
             return aPos.x - bPos.x;
         });
 
-        // Find current stack
+        // If the cursor is on the workspace floor, wrap back to the first stack.
         const currentNode = cursor.getCurNode();
+        if (currentNode?.getType() === Blockly.ASTNode.types.WORKSPACE) {
+            if (sortedBlocks.length === 0) {
+                this.announceNoOtherStacks();
+                return false;
+            }
+            this.moveToStack(workspace, sortedBlocks[0], 0, sortedBlocks.length);
+            return true;
+        }
+
+        if (topBlocks.length <= 1) {
+            this.announceNoOtherStacks();
+            return false;
+        }
+
+        // Find current stack
         const currentBlock = currentNode?.getSourceBlock();
 
         if (!currentBlock) {
@@ -103,7 +114,12 @@ export class StackNavigationAction {
         // Calculate next index
         let nextIndex;
         if (direction === 'next') {
-            nextIndex = (currentIndex + 1) % sortedBlocks.length;
+            if (currentIndex === sortedBlocks.length - 1) {
+                // Past the last stack — drop to the workspace floor.
+                this.moveToWorkspaceFloor(workspace, sortedBlocks);
+                return true;
+            }
+            nextIndex = currentIndex + 1;
         } else {
             nextIndex = currentIndex === 0 ? sortedBlocks.length - 1 : currentIndex - 1;
         }
@@ -145,6 +161,26 @@ export class StackNavigationAction {
             currentBlock = currentBlock.getParent()!;
         }
         return currentBlock;
+    }
+
+    /**
+     * Move cursor to an empty workspace position below the last stack.
+     */
+    private moveToWorkspaceFloor(workspace: Blockly.WorkspaceSvg, sortedBlocks: Blockly.Block[]): void {
+        const cursor = workspace.getCursor();
+        if (!cursor) return;
+
+        const lastBlock = sortedBlocks[sortedBlocks.length - 1];
+        const pos = lastBlock.getRelativeToSurfaceXY();
+        const wsCoord = new Blockly.utils.Coordinate(pos.x, pos.y + 150);
+        const wsNode = Blockly.ASTNode.createWorkspaceNode(workspace, wsCoord);
+        cursor.setCurNode(wsNode);
+
+        const message = 'End of stacks. Empty workspace area. Press N to return to the first stack.';
+        if ((window as any).accessibilityDemo?.getScreenReader) {
+            const screenReader = (window as any).accessibilityDemo.getScreenReader();
+            screenReader?.forceSpeak?.(message);
+        }
     }
 
     /**
