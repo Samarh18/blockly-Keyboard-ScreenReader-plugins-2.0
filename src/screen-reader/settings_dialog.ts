@@ -6,17 +6,9 @@
 
 import * as Blockly from 'blockly/core';
 import { ScreenReader } from './screen_reader';
+import type { SpeechSettings } from './audio_feedback';
 
-/**
- * Speech settings interface
- */
-export interface SpeechSettings {
-  enabled: boolean;    // Enable/disable screen reader
-  rate: number;        // 0.5 - 3.0
-  pitch: number;       // 0.5 - 2.0
-  volume: number;      // 0.1 - 1.0
-  voiceIndex: number;  // Index in available voices array
-}
+export type { SpeechSettings };
 
 /** Returns the default speech settings. */
 export function getDefaultSpeechSettings(): SpeechSettings {

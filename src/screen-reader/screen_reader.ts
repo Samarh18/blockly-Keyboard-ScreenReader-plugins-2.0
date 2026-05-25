@@ -7,7 +7,14 @@
 import * as Blockly from 'blockly';
 import { getFlyoutElement } from '../keyboard-navigation/workspace_utilities';
 import { getBlockMessage } from './block_descriptions';
-import { SpeechSettings, loadSpeechSettings } from './settings_dialog';
+import { loadSpeechSettings } from './settings_dialog';
+import {
+  AudioFeedbackProvider,
+  WebSpeechProvider,
+  AriaLiveProvider,
+  CompositeProvider,
+  SpeechSettings,
+} from './audio_feedback';
 
 interface MenuObservers {
   menuObserver: MutationObserver | null;
@@ -32,13 +39,8 @@ interface BlockPosition {
  */
 export class ScreenReader {
   private workspace: Blockly.WorkspaceSvg;
-  private settings: SpeechSettings;
-  private selectedVoice: SpeechSynthesisVoice | null = null;
-  private isEnabled: boolean = true;
+  private provider: AudioFeedbackProvider;
   private debugMode: boolean = true;
-
-  private pendingMessage: string | null = null;
-  private interruptionTimer: number | null = null;
 
   private lastAnnouncedBlockId: string | null = null;
   private lastWorkspaceNodeId: string | null = null;
@@ -64,18 +66,17 @@ export class ScreenReader {
   /**
    * Constructs a new ScreenReader instance.
    * @param workspace The Blockly workspace to attach to.
+   * @param provider Optional audio feedback provider. Defaults to a CompositeProvider
+   *   combining WebSpeechProvider and AriaLiveProvider.
    */
-  constructor(workspace: Blockly.WorkspaceSvg) {
+  constructor(workspace: Blockly.WorkspaceSvg, provider?: AudioFeedbackProvider) {
     this.workspace = workspace;
     this.debugLog('Initializing ScreenReader...');
 
-    // Load settings first — initializeSpeechSynthesis() calls applyVoiceSettings()
-    // which reads this.settings, so settings must be ready before that call.
-    this.settings = loadSpeechSettings();
-
-    // Initialize speech synthesis
-    this.initializeSpeechSynthesis();
-    this.applyVoiceSettings();
+    this.provider = provider ?? new CompositeProvider([
+      new WebSpeechProvider(loadSpeechSettings()),
+      new AriaLiveProvider(),
+    ]);
 
     // Initialize all event listeners
     this.initEventListeners();
@@ -85,194 +86,39 @@ export class ScreenReader {
     this.setupFieldEditingListeners();
   }
 
-  /**
-   * Apply voice settings
-   */
-  private applyVoiceSettings(): void {
-    const voices = window.speechSynthesis.getVoices();
-    this.selectedVoice = voices[this.settings.voiceIndex] || voices[0] || null;
-  }
-
-  /**
-   * Update settings (called from settings dialog)
-   */
+  /** Update settings (called from settings dialog). */
   public updateSettings(newSettings: SpeechSettings): void {
-    this.settings = { ...newSettings };
-    this.setEnabled(newSettings.enabled);
-    this.applyVoiceSettings();
+    this.provider.updateSettings?.(newSettings);
   }
 
-  /**
-   * Test speech settings with a message
-   */
+  /** Test speech settings with a sample message. */
   public testSpeechSettings(message: string): void {
-    this.forceSpeak(message);
+    this.provider.forceSpeak(message);
   }
 
-  /**
-   * Enable or disable the screen reader
-   */
+  /** Enable or disable audio feedback. */
   public setEnabled(enabled: boolean): void {
-    this.isEnabled = enabled;
-    if (!enabled) {
-      // Cancel any pending speech when disabled
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-      this.pendingMessage = null;
-    }
+    this.provider.setEnabled(enabled);
   }
 
-  /**
-   * Check if screen reader is enabled
-   */
+  /** Returns whether audio feedback is currently enabled. */
   public isScreenReaderEnabled(): boolean {
-    return this.isEnabled;
+    return this.provider.isEnabled();
   }
 
-  /**
-   * Initialize speech synthesis with proper voice loading
-   */
-  private initializeSpeechSynthesis(): void {
-    if ('speechSynthesis' in window) {
-      let voices = window.speechSynthesis.getVoices();
-
-      if (voices.length === 0) {
-        // Voices not loaded yet, wait for them
-        window.speechSynthesis.onvoiceschanged = () => {
-          voices = window.speechSynthesis.getVoices();
-          this.debugLog(`Loaded ${voices.length} voices`);
-          this.applyVoiceSettings();
-          this.testSpeechAfterVoicesLoaded();
-        };
-      } else {
-        this.applyVoiceSettings();
-        this.testSpeechAfterVoicesLoaded();
-      }
-    }
-  }
-
-  /**
-   * Test speech after voices are loaded
-   */
-  private testSpeechAfterVoicesLoaded(): void {
-    setTimeout(() => {
-      this.speak('Screen reader enabled. Press Tab to navigate between controls. Use arrow keys within menus.');
-    }, 100);
-  }
-
-  /**
-   * Enhanced speak method with intelligent interruption
-   */
+  /** Internal speak helper — keeps all call sites in this file unchanged. */
   private speak(message: string, priority: 'high' | 'normal' = 'normal'): void {
-    this.debugLog(`Speaking: ${message} (priority: ${priority})`);
-
-    if (!('speechSynthesis' in window) || !this.isEnabled) {
-      return;
-    }
-
-    // Always clear any pending deferred speak so only the latest wins.
-    if (this.interruptionTimer) {
-      clearTimeout(this.interruptionTimer);
-      this.interruptionTimer = null;
-    }
-
-    if (priority === 'high') {
-      // Cancel whatever is playing and schedule the new message after a
-      // short pause so Chrome has time to process the cancel.
-      this.pendingMessage = null;
-      window.speechSynthesis.cancel();
-      this.interruptionTimer = window.setTimeout(() => {
-        this.interruptionTimer = null;
-        this.speakImmediate(message);
-      }, 50);
-    } else {
-      // Normal priority: queue behind current speech, replacing any older
-      // pending message so only the most recent normal announcement plays.
-      // Also guard against the 50ms window after a high-priority cancel()
-      // where speaking=false but the timer hasn't fired yet — firing
-      // speakImmediate() there causes wrong-order queuing.
-      if (window.speechSynthesis.speaking || this.interruptionTimer !== null) {
-        this.pendingMessage = message;
-      } else {
-        this.speakImmediate(message);
-      }
-    }
+    this.provider.speak(message, priority);
   }
 
-  /**
-   * Immediately speak a message
-   */
-  private speakImmediate(message: string): void {
-    try {
-      const utterance = new SpeechSynthesisUtterance(message);
-
-      utterance.rate = this.settings.rate;
-      utterance.pitch = this.settings.pitch;
-      utterance.volume = this.settings.volume;
-
-      if (this.selectedVoice) {
-        utterance.voice = this.selectedVoice;
-      }
-
-      utterance.onstart = () => {
-        this.debugLog(`Speech started: "${message}"`);
-      };
-
-      utterance.onend = () => {
-        this.debugLog(`Speech ended: "${message}"`);
-
-        if (this.pendingMessage) {
-          const pending = this.pendingMessage;
-          this.pendingMessage = null;
-          this.speak(pending);
-        }
-      };
-
-      utterance.onerror = (event) => {
-        this.debugLog(`Speech error: ${event.error} for message: "${message}"`);
-      };
-
-      // Chrome pauses speechSynthesis after ~15s of silence and never
-      // auto-resumes. Calling resume() before speak() is a no-op when
-      // synthesis is already running, and fixes the silent-queue bug.
-      window.speechSynthesis.resume();
-      window.speechSynthesis.speak(utterance);
-    } catch (error) {
-      this.debugLog(`Error creating speech utterance: ${error}`);
-    }
-  }
-
-  /**
-   * Force speak a message by clearing everything first (use sparingly)
-   */
+  /** Force-interrupt current speech and play this message immediately. */
   public forceSpeak(message: string): void {
-    if (!this.isEnabled) {
-      this.debugLog(`Force speech blocked - screen reader disabled: "${message}"`);
-      return;
-    }
-
-    if ('speechSynthesis' in window) {
-      if (this.interruptionTimer) {
-        clearTimeout(this.interruptionTimer);
-        this.interruptionTimer = null;
-      }
-
-      this.pendingMessage = null;
-      window.speechSynthesis.cancel();
-
-      this.interruptionTimer = window.setTimeout(() => {
-        this.interruptionTimer = null;
-        this.speakImmediate(message);
-      }, 100);
-    }
+    this.provider.forceSpeak(message);
   }
 
-  /**
-   * Announce a high-priority message (interrupts more aggressively)
-   */
+  /** Speak a message at high priority, interrupting current speech. */
   public speakHighPriority(message: string): void {
-    this.speak(message, 'high');
+    this.provider.speak(message, 'high');
   }
 
   /**
@@ -281,21 +127,13 @@ export class ScreenReader {
    */
   public setDeletingAll(): void {
     this.isDeletingAll = true;
-    setTimeout(() => {
-      this.isDeletingAll = false;
-    }, 1000);
+    setTimeout(() => { this.isDeletingAll = false; }, 1000);
   }
 
-  /**
-   * Reset speech synthesis if it gets stuck
-   */
+  /** Cancel current speech and attempt to recover if synthesis is stuck. */
   public resetSpeechSynthesis(): void {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      setTimeout(() => {
-        this.speak('Speech synthesis reset');
-      }, 200);
-    }
+    this.provider.cancel();
+    setTimeout(() => { this.speak('Speech synthesis reset'); }, 200);
   }
 
   /**
@@ -1470,11 +1308,6 @@ export class ScreenReader {
       this.cursorInterval = null;
     }
 
-    if (this.interruptionTimer) {
-      clearTimeout(this.interruptionTimer);
-      this.interruptionTimer = null;
-    }
-
     // Clean up menu observers
     if (this.menuObservers) {
       if (this.menuObservers.menuObserver) {
@@ -1485,9 +1318,6 @@ export class ScreenReader {
       }
     }
 
-    // Cancel any pending speech
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
+    this.provider.dispose();
   }
 }
