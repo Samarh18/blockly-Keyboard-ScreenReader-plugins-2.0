@@ -29,7 +29,6 @@ import { Clipboard } from './actions/clipboard';
 import { DeleteAction } from './actions/delete';
 import { EditAction } from './actions/edit';
 import { Navigation } from './navigation';
-import { ShortcutDialog } from './shortcut_dialog';
 import { WorkspaceMovement } from './actions/ws_movement';
 import { ArrowNavigation } from './actions/arrow_navigation';
 import { ExitAction } from './actions/exit';
@@ -49,8 +48,6 @@ export class NavigationController {
   private navigation: Navigation = new Navigation();
 
   private mover = new Mover(this.navigation);
-
-  shortcutDialog: ShortcutDialog = new ShortcutDialog();
 
   /** Context menu and keyboard action for deletion. */
   deleteAction: DeleteAction = new DeleteAction(this.navigation);
@@ -438,12 +435,6 @@ export class NavigationController {
 
     this.clipboard.install();
     this.moveActions.install();
-    this.shortcutDialog.install();
-
-    // Initialize the shortcut modal with available shortcuts.  Needs
-    // to be done separately rather at construction, as many shortcuts
-    // are not registered at that point.
-    this.shortcutDialog.createModalContent();
 
     this.rootNavigationAction.install();
     this.stackNavigationAction.install();
@@ -464,7 +455,6 @@ export class NavigationController {
     this.enterAction.uninstall();
     this.undoRedoAction.uninstall();
     this.actionMenu.uninstall();
-    this.shortcutDialog.uninstall();
     this.rootNavigationAction.uninstall();
     this.stackNavigationAction.uninstall();
 

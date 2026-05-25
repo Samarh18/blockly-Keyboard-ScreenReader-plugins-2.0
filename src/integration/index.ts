@@ -102,13 +102,6 @@ export class AccessibilityDemo {
     }
 
     /**
-     * Toggle the keyboard shortcuts dialog
-     */
-    toggleShortcutDialog(): void {
-        this.keyboardNav.toggleShortcutDialog();
-    }
-
-    /**
      * Toggle the settings dialog
      */
     toggleSettingsDialog(): void {

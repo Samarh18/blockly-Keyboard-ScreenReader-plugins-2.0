@@ -114,6 +114,9 @@ The screen reader provides detailed descriptions for:
 
 > These updates were not co-designed with students. They reflect the author's own understanding of what would be useful based on the thesis study, but have not been validated with users.
 
+### Remove shortcut dialog and toggleShortcutDialog()
+The built-in keyboard-shortcut reference dialog (`ShortcutDialog`) and its associated `toggleShortcutDialog()` methods have been removed from `KeyboardNavigation`, `NavigationController`, and the integration layer. The Help dialog already serves this role, so the shortcut dialog was redundant. The now-unused `shortcut_dialog.ts` file was also deleted.
+
 ### Integration Layer: Consistent Component Initialisation
 The `SettingsDialog` and `HelpDialog` classes now follow the same initialisation pattern as every other component (`KeyboardNavigation`, `ScreenReader`, `GlobalShortcuts`): all setup — including injecting HTML into the DOM — happens inside the constructor. Previously, construction left the dialogs in a half-built state and a separate `.install()` call was required to finish the work. That extra step has been removed from the integration layer; constructing a dialog now fully prepares it, with no follow-up call needed.
 
