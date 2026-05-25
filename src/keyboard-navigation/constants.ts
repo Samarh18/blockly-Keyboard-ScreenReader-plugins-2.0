@@ -31,7 +31,6 @@ export enum SHORTCUT_NAMES {
   DOWN = 'down',
   RIGHT = 'right',
   LEFT = 'left',
-  INSERT = 'insert',
   EDIT_OR_CONFIRM = 'edit_or_confirm',
   DISCONNECT = 'disconnect',
   TOOLBOX = 'toolbox',
@@ -79,7 +78,6 @@ export const SHORTCUT_CATEGORIES: Record<
     SHORTCUT_NAMES.LIST_SHORTCUTS,
   ],
   'Editing': [
-    SHORTCUT_NAMES.INSERT,
     'delete',
     SHORTCUT_NAMES.DISCONNECT,
     'cut',

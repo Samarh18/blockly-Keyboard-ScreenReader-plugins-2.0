@@ -127,9 +127,6 @@ export class ActionMenu {
         const connection = node.getLocation() as Connection;
         rtl = connection.getSourceBlock().RTL;
 
-        // Slightly hacky: get insert action from registry.  Hacky
-        // because registry typings don't include {connection: ...} as
-        // a possible kind of scope.
         this.addConnectionItems(connection, menuOptions);
         break;
       }
@@ -173,7 +170,6 @@ export class ActionMenu {
     >,
   ) {
     const possibleOptions = [
-      this.getContextMenuAction('insert'),
       this.getContextMenuAction('blockPasteFromContextMenu'),
     ];
 

@@ -124,6 +124,9 @@ Navigating past the last block or last stack now lands on an explicit "workspace
 - **N key** from the workspace floor → wraps back to the first stack.
 - **Enter** on the workspace floor → opens the block menu so a new stack can be started there.
 
+### I key: location announcer only (insert action removed)
+The **I** key now exclusively announces the current focus location. The original `InsertAction` class (which registered **I** via Blockly's shortcut registry to open the block menu from a connection) has been removed along with its context-menu entry ("Insert Block (I)"). The `INSERT` constant has been removed from `SHORTCUT_NAMES` and the shortcut categories table.
+
 ### Remove shortcut dialog and toggleShortcutDialog()
 The built-in keyboard-shortcut reference dialog (`ShortcutDialog`) and its associated `toggleShortcutDialog()` methods have been removed from `KeyboardNavigation`, `NavigationController`, and the integration layer. The Help dialog already serves this role, so the shortcut dialog was redundant. The now-unused `shortcut_dialog.ts` file was also deleted.
 
