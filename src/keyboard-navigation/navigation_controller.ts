@@ -347,23 +347,22 @@ export class NavigationController {
           this.navigation.canCurrentlyEdit(workspace) &&
           workspace.getTopBlocks(false).length > 0,
         callback: (workspace) => {
-          // Get all top-level blocks
           const topBlocks = workspace.getTopBlocks(false);
+          if (topBlocks.length === 0) return false;
 
-          if (topBlocks.length === 0) {
-            return false;
-          }
+          // Tell the screen reader to suppress the individual per-block
+          // "Block deleted" announcements and speak one summary instead.
+          const sr = (window as any).accessibilityDemo?.getScreenReader?.();
+          sr?.setDeletingAll?.();
 
-          // Delete all blocks
           Blockly.Events.setGroup(true);
           try {
-            topBlocks.forEach(block => {
-              block.dispose(true);
-            });
+            topBlocks.forEach(block => block.dispose(true));
           } finally {
             Blockly.Events.setGroup(false);
           }
 
+          sr?.forceSpeak?.('All blocks deleted.');
           return true;
         },
         keyCodes: [KeyCodes.D],

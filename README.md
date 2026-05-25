@@ -124,6 +124,14 @@ Navigating past the last block or last stack now lands on an explicit "workspace
 - **N key** from the workspace floor → wraps back to the first stack.
 - **Enter** on the workspace floor → opens the block menu so a new stack can be started there.
 
+### Consistent shortcut handling: I and D moved out of the screen reader
+The screen reader no longer handles keyboard shortcuts directly. Two raw key listeners that lived inside `ScreenReader.setupKeyboardShortcuts()` have been moved to their proper homes:
+
+- **I key** → moved to `GlobalShortcuts` alongside B, R, W, S, H. It now follows the same pattern: one capture-phase listener, one private method (`announceCurrentLocation`), same ignore rules as all other global shortcuts.
+- **D key announcement** → the screen reader's independent D listener (which announced "All blocks deleted" and set the `isDeletingAll` flag) has been removed. The D shortcut callback in `NavigationController` now calls `screenReader.setDeletingAll()` and speaks the announcement directly — one place, one precondition, no coordination between two separate listeners. `setDeletingAll()` is a new public method on `ScreenReader` that suppresses individual per-block announcements during bulk deletion.
+
+`setupKeyboardShortcuts()` in the screen reader now only contains the Tab-key tracking that records when the user leaves the workspace — which is internal screen reader state, not a shortcut action.
+
 ### I key: location announcer only (insert action removed)
 The **I** key now exclusively announces the current focus location. The original `InsertAction` class (which registered **I** via Blockly's shortcut registry to open the block menu from a connection) has been removed along with its context-menu entry ("Insert Block (I)"). The `INSERT` constant has been removed from `SHORTCUT_NAMES` and the shortcut categories table.
 

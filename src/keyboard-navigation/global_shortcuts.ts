@@ -6,6 +6,7 @@
 
 import * as Blockly from 'blockly/core';
 import { NavigationController } from './navigation_controller';
+import { getFlyoutElement } from './workspace_utilities';
 
 /**
  * Manages document-level keyboard shortcuts (B/R/W/S/H) that move focus
@@ -150,6 +151,12 @@ export class GlobalShortcuts {
                 e.stopPropagation();
                 this.focusHelpButton();
                 break;
+
+            case 'i':
+                e.preventDefault();
+                e.stopPropagation();
+                this.announceCurrentLocation();
+                break;
         }
     }
 
@@ -184,6 +191,34 @@ export class GlobalShortcuts {
             settingsButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } else {
             console.warn('Could not find Settings button with id="settings-button"');
+        }
+    }
+
+    /**
+     * Announce where keyboard focus currently is via the screen reader.
+     */
+    private announceCurrentLocation(): void {
+        const sr = (window as any).accessibilityDemo?.getScreenReader?.();
+        if (!sr) return;
+
+        const active = document.activeElement as HTMLElement | null;
+
+        if (active?.tagName === 'BUTTON') {
+            const label = active.textContent?.trim() || active.getAttribute('aria-label') || 'Unknown';
+            sr.speakHighPriority(`${label} button`);
+            return;
+        }
+
+        if (this.workspace.getParentSvg().contains(active)) {
+            sr.speakHighPriority('Workspace');
+            return;
+        }
+
+        const toolbox = this.workspace.getToolbox();
+        const toolboxDiv = toolbox instanceof Blockly.Toolbox ? toolbox.HtmlDiv : null;
+        const flyoutEl = getFlyoutElement(this.workspace);
+        if ((toolboxDiv && toolboxDiv.contains(active)) || (flyoutEl && flyoutEl.contains(active))) {
+            sr.speakHighPriority('Blocks menu');
         }
     }
 

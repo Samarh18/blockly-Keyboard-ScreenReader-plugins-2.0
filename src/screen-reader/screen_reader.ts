@@ -276,6 +276,17 @@ export class ScreenReader {
   }
 
   /**
+   * Called by the D-key shortcut before bulk-deleting all blocks so the
+   * BLOCK_DELETE listener suppresses individual "Block deleted" announcements.
+   */
+  public setDeletingAll(): void {
+    this.isDeletingAll = true;
+    setTimeout(() => {
+      this.isDeletingAll = false;
+    }, 1000);
+  }
+
+  /**
    * Reset speech synthesis if it gets stuck
    */
   public resetSpeechSynthesis(): void {
@@ -726,80 +737,20 @@ export class ScreenReader {
    * Set up keyboard shortcut listeners
    */
   private setupKeyboardShortcuts(): void {
-    // Tab key navigation
+    // Track when the user tabs away from the workspace so the cursor listener
+    // can re-announce on re-entry.
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Tab') {
-        this.debugLog('Tab key detected');
-        const currentActive = document.activeElement;
-        if (currentActive === this.workspace.getParentSvg() ||
-          this.workspace.getParentSvg().contains(currentActive as Node)) {
-          this.hasLeftWorkspace = true;
-        }
-
-        setTimeout(() => {
-          const activeElement = document.activeElement;
-          this.debugLog(`Active element after Tab: ${activeElement?.tagName} ${activeElement?.id}`);
-        }, 100);
+      if (e.key !== 'Tab') return;
+      this.debugLog('Tab key detected');
+      const currentActive = document.activeElement;
+      if (currentActive === this.workspace.getParentSvg() ||
+        this.workspace.getParentSvg().contains(currentActive as Node)) {
+        this.hasLeftWorkspace = true;
       }
-    });
-
-    // Global "I" key: announce where focus currently is
-    document.addEventListener('keydown', (e) => {
-      if (e.key.toLowerCase() !== 'i') return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-      // Skip when typing in any text input
-      const target = e.target as HTMLElement;
-      const tagName = target.tagName.toLowerCase();
-      if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' ||
-        target.isContentEditable || !!target.closest('.blocklyHtmlInput')) {
-        return;
-      }
-
-      const active = document.activeElement as HTMLElement | null;
-
-      // Button has focus — announce its label
-      if (active?.tagName === 'BUTTON') {
-        const label = active.textContent?.trim() || active.getAttribute('aria-label') || 'Unknown';
-        this.speakHighPriority(`${label} button`);
-        return;
-      }
-
-      // Workspace SVG has focus
-      const wsSvg = this.workspace.getParentSvg();
-      if (wsSvg.contains(active)) {
-        this.speakHighPriority('Workspace');
-        return;
-      }
-
-      // Toolbox or flyout has focus → "Blocks menu"
-      const toolbox = this.workspace.getToolbox();
-      const toolboxDiv = toolbox instanceof Blockly.Toolbox ? toolbox.HtmlDiv : null;
-      const flyoutEl = getFlyoutElement(this.workspace);
-      const inToolbox = !!(toolboxDiv && toolboxDiv.contains(active));
-      const inFlyout = !!(flyoutEl && flyoutEl.contains(active));
-      if (inToolbox || inFlyout) {
-        this.speakHighPriority('Blocks menu');
-        return;
-      }
-    });
-
-    // Workspace action shortcut (D for delete all)
-    document.addEventListener('keydown', (e) => {
-      const workspaceHasFocus = document.activeElement === this.workspace.getParentSvg() ||
-        this.workspace.getParentSvg().contains(document.activeElement as Node);
-
-      if (!workspaceHasFocus || e.ctrlKey || e.metaKey || e.altKey || this.workspace.options.readOnly) {
-        return;
-      }
-
-      if (e.key.toLowerCase() === 'd') {
-        this.isDeletingAll = true;
-        this.forceSpeak('All blocks are deleted');
-        setTimeout(() => {
-          this.isDeletingAll = false;
-        }, 1000);
-      }
+      setTimeout(() => {
+        const activeElement = document.activeElement;
+        this.debugLog(`Active element after Tab: ${activeElement?.tagName} ${activeElement?.id}`);
+      }, 100);
     });
   }
 
