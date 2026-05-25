@@ -176,7 +176,7 @@ export class StackNavigationAction {
         const wsNode = Blockly.ASTNode.createWorkspaceNode(workspace, wsCoord);
         cursor.setCurNode(wsNode);
 
-        const message = 'End of stacks. Empty workspace area. Press N to return to the first stack.';
+        const message = 'Empty workspace area. Press Enter to add a new block, N to return to the first stack.';
         if ((window as any).accessibilityDemo?.getScreenReader) {
             const screenReader = (window as any).accessibilityDemo.getScreenReader();
             screenReader?.forceSpeak?.(message);

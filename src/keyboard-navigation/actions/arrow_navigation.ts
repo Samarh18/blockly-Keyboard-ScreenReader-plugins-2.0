@@ -75,7 +75,33 @@ export class ArrowNavigation {
       new BlocklyUtils.Coordinate(wsX, wsY),
     );
     cursor.setCurNode(wsNode);
-    speakMessage('End of blocks. Empty workspace area. Press Up arrow to return to blocks.');
+    speakMessage('Empty workspace area. Press Enter to add a new block, Up arrow to return to blocks, or Down arrow to go to the first stack.');
+  }
+
+  /**
+   * Moves the cursor to the root of the first stack (used when pressing
+   * Down from the workspace floor).
+   */
+  private goToFirstBlock(workspace: WorkspaceSvg): void {
+    const cursor = workspace.getCursor();
+    if (!cursor) return;
+
+    const topBlocks = workspace.getTopBlocks(false);
+    if (topBlocks.length === 0) return;
+
+    const sorted = topBlocks.sort((a, b) => {
+      const aPos = a.getRelativeToSurfaceXY();
+      const bPos = b.getRelativeToSurfaceXY();
+      if (Math.abs(aPos.y - bPos.y) > 50) return aPos.y - bPos.y;
+      return aPos.x - bPos.x;
+    });
+
+    const firstRoot = sorted[0];
+    const blockNode = ASTNode.createBlockNode(firstRoot);
+    if (blockNode) {
+      cursor.setCurNode(blockNode);
+      speakMessage('Back to first stack.');
+    }
   }
 
   /**
@@ -200,8 +226,8 @@ export class ArrowNavigation {
               if (!isHandled && workspace) {
                 const cursor = workspace.getCursor();
                 if (cursor?.getCurNode()?.getType() === ASTNode.types.WORKSPACE) {
-                  // Already on the workspace floor — stay and re-announce.
-                  speakMessage('End of blocks. Press Up arrow to return to blocks.');
+                  // On the workspace floor — wrap to the top of the first stack.
+                  this.goToFirstBlock(workspace);
                 } else if (
                   !this.navigation.defaultWorkspaceCursorPositionIfNeeded(workspace)
                 ) {

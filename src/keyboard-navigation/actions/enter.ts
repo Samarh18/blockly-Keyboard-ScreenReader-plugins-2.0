@@ -112,13 +112,8 @@ export class EnterAction {
             : genericHint;
         dialog.alert(hint);
       }
-    } else if (curNode.isConnection()) {
+    } else if (curNode.isConnection() || nodeType === ASTNode.types.WORKSPACE) {
       this.navigation.openToolboxOrFlyout(workspace);
-    } else if (nodeType === ASTNode.types.WORKSPACE) {
-      // The cursor is on the empty workspace floor. Opening the flyout here
-      // would let students add a disconnected block, which we want to prevent.
-      const sr = (window as any).accessibilityDemo?.getScreenReader?.();
-      sr?.forceSpeak?.('Empty workspace area. Press Up arrow to return to blocks.');
     } else if (nodeType === ASTNode.types.STACK) {
       console.warn('Cannot mark a stack.');
     }
