@@ -47,7 +47,7 @@ export class ScreenReader {
   private lastSelectedBlockId: string | null = null;
   private lastSelectedAnnouncementTime: number = 0;
   private hasLeftWorkspace: boolean = false;
-  private cursorInterval: number | null = null;
+  private cursorChangeListener: ((event: Blockly.Events.Abstract) => void) | null = null;
 
   private menuObservers?: MenuObservers;
   private fieldEditingListeners: Map<string, FieldEditingListener> = new Map();
@@ -421,32 +421,29 @@ export class ScreenReader {
   private setupWorkspaceCursorListener(): void {
     this.debugLog('Setting up workspace cursor listener...');
 
-    if (this.cursorInterval) {
-      clearInterval(this.cursorInterval);
-      this.cursorInterval = null;
-    }
+    this.cursorChangeListener = (event: Blockly.Events.Abstract) => {
+      if (event.type !== Blockly.Events.MARKER_MOVE) return;
+      const markerEvent = event as Blockly.Events.MarkerMove;
+      if (!markerEvent.isCursor || !markerEvent.newNode) return;
 
-    this.cursorInterval = window.setInterval(() => {
-      const cursor = this.workspace.getCursor();
-      if (cursor) {
-        const curNode = cursor.getCurNode();
-        if (curNode) {
-          const currentNodeId = this.getNodeIdentifier(curNode);
-          const workspaceHasFocus = document.activeElement === this.workspace.getParentSvg() ||
-            this.workspace.getParentSvg().contains(document.activeElement as Node);
+      const newNode = markerEvent.newNode;
+      const currentNodeId = this.getNodeIdentifier(newNode);
+      const workspaceHasFocus =
+        document.activeElement === this.workspace.getParentSvg() ||
+        this.workspace.getParentSvg().contains(document.activeElement as Node);
 
-          if (this.lastWorkspaceNodeId !== currentNodeId ||
-            (workspaceHasFocus && this.hasLeftWorkspace)) {
-            this.lastWorkspaceNodeId = currentNodeId;
-            this.announceNode(curNode);
+      if (this.lastWorkspaceNodeId !== currentNodeId ||
+          (workspaceHasFocus && this.hasLeftWorkspace)) {
+        this.lastWorkspaceNodeId = currentNodeId;
+        this.announceNode(newNode);
 
-            if (this.hasLeftWorkspace && workspaceHasFocus) {
-              this.hasLeftWorkspace = false;
-            }
-          }
+        if (this.hasLeftWorkspace && workspaceHasFocus) {
+          this.hasLeftWorkspace = false;
         }
       }
-    }, 250);
+    };
+
+    this.workspace.addChangeListener(this.cursorChangeListener);
   }
 
   /**
@@ -653,31 +650,22 @@ export class ScreenReader {
       }
     });
 
-    // Setup flyout listeners
+    // Setup flyout cursor listener
     const flyout = this.workspace.getFlyout();
     if (flyout) {
-      const flyoutWorkspace = flyout.getWorkspace();
-      setInterval(() => {
-        const cursor = flyoutWorkspace.getCursor();
-        if (cursor) {
-          const curNode = cursor.getCurNode();
-          if (curNode) {
-            const block = curNode.getSourceBlock();
-            if (block && (!this.lastAnnouncedBlockId || this.lastAnnouncedBlockId !== block.id)) {
-              this.lastAnnouncedBlockId = block.id;
-              const blockSvg = block as Blockly.BlockSvg;
-              const position = this.getBlockPositionInFlyout(blockSvg);
-              const blockDescription = this.getBlockDescription(block);
+      flyout.getWorkspace().addChangeListener((event: Blockly.Events.Abstract) => {
+        if (event.type !== Blockly.Events.MARKER_MOVE) return;
+        const markerEvent = event as Blockly.Events.MarkerMove;
+        if (!markerEvent.isCursor || !markerEvent.newNode) return;
 
-              if (position) {
-                this.speak(`${blockDescription}, ${position.index} of ${position.total}`);
-              } else {
-                this.speak(blockDescription);
-              }
-            }
-          }
+        const block = markerEvent.newNode.getSourceBlock();
+        if (block && this.lastAnnouncedBlockId !== block.id) {
+          this.lastAnnouncedBlockId = block.id;
+          const position = this.getBlockPositionInFlyout(block as Blockly.BlockSvg);
+          const description = this.getBlockDescription(block);
+          this.speak(position ? `${description}, ${position.index} of ${position.total}` : description);
         }
-      }, 500);
+      });
     }
   }
 
@@ -689,11 +677,8 @@ export class ScreenReader {
 
     let menuObserver: MutationObserver | null = null;
     let lastAnnouncedMenuItem: string = '';
-    let menuItemCount: number = 0;
     let currentMenuIndex: number = -1;
-    let monitorInterval: number | null = null;
     let isMenuOpen: boolean = false;
-    let hasAnnouncedMenuOpen: boolean = false;
 
     const getMenuItemText = (element: Element): string => {
       let text = '';
@@ -768,86 +753,52 @@ export class ScreenReader {
       }
     };
 
-    const monitorDropdownMenu = () => {
-      const dropdownDiv = document.querySelector('.blocklyDropDownDiv') as HTMLElement;
-
-      if (dropdownDiv && dropdownDiv.style.display !== 'none') {
-        const menuItems = dropdownDiv.querySelectorAll('.blocklyMenuItem');
-        const newMenuItemCount = menuItems.length;
-
-        if (newMenuItemCount !== menuItemCount) {
-          menuItemCount = newMenuItemCount;
-        }
-
-        const highlightedItem = dropdownDiv.querySelector('.blocklyMenuItemHighlight');
-        if (highlightedItem) {
-          const index = Array.from(menuItems).indexOf(highlightedItem);
-          if (index !== -1 && index !== currentMenuIndex) {
-            currentMenuIndex = index;
-            announceMenuItem(highlightedItem, index, menuItemCount);
-          }
-        }
-      } else if (isMenuOpen) {
-        isMenuOpen = false;
-        hasAnnouncedMenuOpen = false;
-        lastAnnouncedMenuItem = '';
-        currentMenuIndex = -1;
-        this.speak('Menu closed');
-        if (monitorInterval) {
-          clearInterval(monitorInterval);
-          monitorInterval = null;
-        }
-      }
-    };
-
-    // Set up mutation observer
+    // Set up mutation observer — no polling interval needed:
+    // open/close detection watches the dropdown div's style attribute,
+    // highlight tracking watches class attribute changes on menu items.
     menuObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
-        if (mutation.target instanceof HTMLElement) {
-          if (mutation.target.classList.contains('blocklyDropDownDiv')) {
-            const isVisible = mutation.target.style.display !== 'none';
+        if (mutation.type === 'attributes' &&
+            mutation.target instanceof HTMLElement &&
+            mutation.target.classList.contains('blocklyDropDownDiv')) {
+          const isVisible = mutation.target.style.display !== 'none';
 
-            if (isVisible && !isMenuOpen) {
-              isMenuOpen = true;
-              hasAnnouncedMenuOpen = false;
-              lastAnnouncedMenuItem = '';
-              currentMenuIndex = -1;
+          if (isVisible && !isMenuOpen) {
+            isMenuOpen = true;
+            lastAnnouncedMenuItem = '';
+            currentMenuIndex = -1;
 
-              if (!hasAnnouncedMenuOpen) {
-                hasAnnouncedMenuOpen = true;
-                setTimeout(() => {
-                  const menuItems = (mutation.target as HTMLElement).querySelectorAll('.blocklyMenuItem');
-                  const itemCount = menuItems.length;
-
-                  if (itemCount > 0) {
-                    this.speak(`Menu opened with ${itemCount} items. Use arrow keys to navigate.`);
-
-                    if (monitorInterval) {
-                      clearInterval(monitorInterval);
-                      monitorInterval = null;
-                    }
-
-                    monitorInterval = window.setInterval(monitorDropdownMenu, 50);
-
-                    setTimeout(() => {
-                      if (monitorInterval) {
-                        clearInterval(monitorInterval);
-                        monitorInterval = null;
-                      }
-                    }, 30000);
+            setTimeout(() => {
+              const dropdownEl = mutation.target as HTMLElement;
+              const menuItems = dropdownEl.querySelectorAll('.blocklyMenuItem');
+              const itemCount = menuItems.length;
+              if (itemCount > 0) {
+                this.speak(`Menu opened with ${itemCount} items. Use arrow keys to navigate.`);
+                // Announce whichever item is already highlighted on open.
+                const highlighted = dropdownEl.querySelector('.blocklyMenuItemHighlight');
+                if (highlighted) {
+                  const index = Array.from(menuItems).indexOf(highlighted);
+                  if (index !== -1) {
+                    currentMenuIndex = index;
+                    announceMenuItem(highlighted, index, itemCount);
                   }
-                }, 100);
+                }
               }
-            }
+            }, 100);
+          } else if (!isVisible && isMenuOpen) {
+            isMenuOpen = false;
+            lastAnnouncedMenuItem = '';
+            currentMenuIndex = -1;
+            this.speak('Menu closed');
           }
         }
 
         if (mutation.type === 'attributes' &&
-          mutation.attributeName === 'class' &&
-          isMenuOpen) {
+            mutation.attributeName === 'class' &&
+            isMenuOpen) {
           const target = mutation.target as HTMLElement;
           if (target.classList.contains('blocklyMenuItem') &&
-            target.classList.contains('blocklyMenuItemHighlight')) {
+              target.classList.contains('blocklyMenuItemHighlight')) {
             const menuItems = target.parentElement?.querySelectorAll('.blocklyMenuItem');
             if (menuItems) {
               const index = Array.from(menuItems).indexOf(target);
@@ -1303,9 +1254,9 @@ export class ScreenReader {
 
     this.disposeFieldEditingListeners();
 
-    if (this.cursorInterval) {
-      clearInterval(this.cursorInterval);
-      this.cursorInterval = null;
+    if (this.cursorChangeListener) {
+      this.workspace.removeChangeListener(this.cursorChangeListener);
+      this.cursorChangeListener = null;
     }
 
     // Clean up menu observers

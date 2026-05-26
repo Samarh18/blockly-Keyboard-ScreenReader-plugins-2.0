@@ -16,12 +16,15 @@ export class WebSpeechProvider implements AudioFeedbackProvider {
   private enabled: boolean;
   private pendingMessage: string | null = null;
   private interruptionTimer: number | null = null;
+  private heartbeatInterval: number | null = null;
+  private visibilityHandler: (() => void) | null = null;
   private debug: boolean = true;
 
   constructor(settings: SpeechSettings) {
     this.settings = { ...settings };
     this.enabled = settings.enabled;
     this.initializeSpeechSynthesis();
+    this.setupReliabilityHandlers();
   }
 
   private log(message: string): void {
@@ -50,6 +53,28 @@ export class WebSpeechProvider implements AudioFeedbackProvider {
         'normal',
       );
     }, 100);
+  }
+
+  private setupReliabilityHandlers(): void {
+    if (!('speechSynthesis' in window)) return;
+
+    // Heartbeat: Chrome silently pauses synthesis after ~15 s of inactivity and
+    // never resumes on its own. Polling resume() every 5 s is a no-op when
+    // speech is already running, and recovers the frozen queue when it isn't.
+    this.heartbeatInterval = window.setInterval(() => {
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+    }, 5000);
+
+    // Visibility: switching tabs cancels or freezes synthesis in many browsers.
+    // Cancel cleanly on hide so the queue doesn't replay stale messages on return.
+    this.visibilityHandler = () => {
+      if (document.hidden) {
+        this.cancel();
+      } else {
+        window.speechSynthesis.resume();
+      }
+    };
+    document.addEventListener('visibilitychange', this.visibilityHandler);
   }
 
   private applyVoiceSettings(): void {
@@ -154,6 +179,14 @@ export class WebSpeechProvider implements AudioFeedbackProvider {
     if (this.interruptionTimer) {
       clearTimeout(this.interruptionTimer);
       this.interruptionTimer = null;
+    }
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
     }
   }
 }
